@@ -23,7 +23,8 @@ on the [Discord Developer Portal](https://discord.dev/), and then copying the to
 
 Create a file called `.env` in the root of the project, and add the following line to it:
 ```env
-DISCORD_TOKEN=your-token-here
+TOKEN="your-token-here"
+CLIENT_ID="your-client-id-here"
 ```
 
 Then, you can run the bot with:
