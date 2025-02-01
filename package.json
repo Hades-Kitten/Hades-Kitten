@@ -1,0 +1,30 @@
+{
+  "name": "hades-kitten",
+  "version": "1.0.0",
+  "main": "src/index",
+  "scripts": {
+    "start": "bun start",
+    "dev": "bun dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@types/node-cron": "^3.0.11",
+    "@xmldom/xmldom": "^0.9.6",
+    "bun": "^1.2.2",
+    "chalk": "^5.4.1",
+    "discord.js": "^14.17.3",
+    "dotenv": "^16.4.7",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^3.3.2",
+    "xml2js": "^0.6.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.9",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}
