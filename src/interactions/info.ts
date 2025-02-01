@@ -41,7 +41,7 @@ export async function execute(
   await interaction.deferReply();
 
   const nationName = interaction.options.getString("nation", true);
-  const apiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?nation=${encodeURIComponent(nationName)}`;
+  const apiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?nation=${encodeURIComponent(nationName)}&q=name+tax+majorindustry+region+influence+demonym2plural+demonym2+demonym+animal+industrydesc+demonym+banner+foundedtime+capital+tax+leader+religion+region+census+flag+currency+fullname+freedom+motto+factbooklist+policies+govt+sectors+population&scale=1+48+72+4+73+74+3+76`;
 
   try {
     const response = await fetch(apiUrl);
@@ -61,6 +61,9 @@ export async function execute(
         iconURL: nationData.FLAG,
         url: `https://www.nationstates.net/nation=${encodeURIComponent(nationName)}`,
       })
+      .setImage(
+        `https://www.nationstates.net/images/banners/${nationData.BANNER}.jpg`,
+      )
       .setDescription(`*"${nationData.MOTTO}"*`)
       .addFields([
         {
@@ -108,18 +111,23 @@ export async function execute(
         },
         {
           name: "Founded",
-          value: nationData.FIRSTLOGIN
-            ? `<t:${Math.round(Number.parseInt(nationData.FIRSTLOGIN))}:d>, <t:${Math.round(Number.parseInt(nationData.FIRSTLOGIN))}:t>`
+          value: nationData.FOUNDEDTIME
+            ? `<t:${Math.round(Number.parseInt(nationData.FOUNDEDTIME))}:d>, <t:${Math.round(Number.parseInt(nationData.FOUNDEDTIME))}:t>`
             : "N/A",
           inline: true,
         },
-      ]);
-    if (nationData.FLAG) embed.setThumbnail(nationData.FLAG);
+      ])
+      .setFooter({
+        text: "Page 1 of 5",
+        iconURL: nationData.FLAG,
+      });
 
     await interaction.editReply({ embeds: [embed] });
   } catch (error) {
     console.error("Error fetching or processing data:", error);
-    await interaction.editReply("An error occurred. Try again later? :3");
+    await interaction.editReply(
+      "An error occurred while fetching or processing data. Did you spell the nation name correctly?",
+    );
   }
 }
 

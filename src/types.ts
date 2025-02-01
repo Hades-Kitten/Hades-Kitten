@@ -18,14 +18,12 @@ export interface ICommand {
 }
 
 export interface Nation {
+  $: {
+    id: string;
+  };
   NAME: string;
-  TYPE: string;
   FULLNAME: string;
   MOTTO: string;
-  CATEGORY?: string;
-  UNSTATUS?: string;
-  ENDORSEMENTS?: string;
-  ISSUES_ANSWERED: string;
   FREEDOM: {
     CIVILRIGHTS: string;
     ECONOMY: string;
@@ -40,8 +38,8 @@ export interface Nation {
   DEMONYM2: string;
   DEMONYM2PLURAL: string;
   FLAG: string;
-  MAJORINDUSTRY?: string;
-  GOVTPRIORITY?: string;
+  BANNER?: string;
+  MAJORINDUSTRY: string;
   GOVT: {
     ADMINISTRATION: string;
     DEFENCE: string;
@@ -56,32 +54,55 @@ export interface Nation {
     SPIRITUALITY: string;
     WELFARE: string;
   };
-  FOUNDED: string;
-  FIRSTLOGIN: string;
-  LASTLOGIN: string;
-  LASTACTIVITY: string;
+  SECTORS: {
+    BLACKMARKET: string;
+    GOVERNMENT: string;
+    INDUSTRY: string;
+    PUBLIC: string;
+  };
+  INDUSTRYDESC: string;
+  FOUNDEDTIME: string;
   INFLUENCE: string;
-  INFLUENCENUM: string;
-  FREEDOMSCORES: {
-    CIVILRIGHTS: string;
-    ECONOMY: string;
-    POLITICALFREEDOM: string;
-  };
-  PUBLICSECTOR: string;
-  DEATHS: {
-    CAUSE: Cause[];
-  };
   LEADER: string;
   CAPITAL: string;
   RELIGION: string;
-  FACTBOOKS: string;
-  DISPATCHES: string;
-  DBID: string;
+  POLICIES?: {
+    POLICY: Policy[];
+  };
+  CENSUS: {
+    SCALE: Scale[];
+  };
+  FACTBOOKLIST?: {
+    FACTBOOK: Factbook[];
+  };
 }
 
-interface Cause {
+interface Policy {
+  NAME: string;
+  PIC: string;
+  CAT: string;
+  DESC: string;
+}
+
+interface Scale {
   $: {
-    type: string;
+    id: string;
   };
-  _: string;
+  SCORE: string;
+  RANK: string;
+  RRANK: string;
+}
+
+interface Factbook {
+  $: {
+    id: string;
+  };
+  TITLE: string;
+  AUTHOR: string;
+  CATEGORY: string;
+  SUBCATEGORY: string;
+  CREATED: string;
+  EDITED: string;
+  VIEWS: string;
+  SCORE: string;
 }
