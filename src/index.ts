@@ -20,8 +20,6 @@ const client = new Client({
   ],
 });
 
-async function updateChannelName(channelID: string, client: Client) {}
-
 client.on(Events.ClientReady, async (client) => {
   console.log(`Logged in as ${client.user.username} (${client.user.id})`);
   await Promise.all([registerEvents(client), registerInteractions(client)]);
