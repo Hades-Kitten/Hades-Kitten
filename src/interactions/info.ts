@@ -2,6 +2,9 @@ import {
   type ChatInputCommandInteraction,
   SlashCommandBuilder,
   EmbedBuilder,
+  ButtonStyle,
+  ActionRowBuilder,
+  ButtonBuilder,
   type Client,
 } from "discord.js";
 import { fetch } from "bun";
@@ -42,6 +45,33 @@ export async function execute(
 
   const nationName = interaction.options.getString("nation", true);
   const apiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?nation=${encodeURIComponent(nationName)}&q=name+tax+majorindustry+region+influence+demonym2plural+demonym2+demonym+animal+industrydesc+demonym+banner+foundedtime+capital+tax+leader+religion+region+census+flag+currency+fullname+freedom+motto+factbooklist+policies+govt+sectors+population&scale=1+48+72+4+73+74+3+76`;
+
+  const curPage = 1;
+  const maxPage = 5;
+
+  const prefix = `${interaction.id}`;
+  const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents([
+    new ButtonBuilder()
+      .setCustomId(`${prefix}:goto:${curPage - 1}`)
+      .setLabel("Previous")
+      .setStyle(ButtonStyle.Primary)
+      .setDisabled(true),
+    new ButtonBuilder()
+      .setCustomId(`${prefix}:pageindicator`)
+      .setLabel(`Page ${curPage} of ${maxPage}`)
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(true),
+    new ButtonBuilder()
+      .setCustomId(`${prefix}:goto:${curPage + 1}`)
+      .setLabel("Next")
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+      .setLabel("Open on NationStates")
+      .setStyle(ButtonStyle.Link)
+      .setURL(
+        `https://www.nationstates.net/nation=${encodeURIComponent(nationName)}`,
+      ),
+  ]);
 
   try {
     const response = await fetch(apiUrl);
@@ -116,13 +146,9 @@ export async function execute(
             : "N/A",
           inline: true,
         },
-      ])
-      .setFooter({
-        text: "Page 1 of 5",
-        iconURL: nationData.FLAG,
-      });
+      ]);
 
-    await interaction.editReply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed], components: [buttonRow] });
   } catch (error) {
     console.error("Error fetching or processing data:", error);
     await interaction.editReply(
