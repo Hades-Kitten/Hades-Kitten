@@ -25,6 +25,7 @@ Create a file called `.env` in the root of the project, and add the following li
 ```env
 TOKEN="your-token-here"
 CLIENT_ID="your-client-id-here"
+DATE_CHANNEL_ID="your-date-channel-id-here"
 ```
 
 Then, you can run the bot with:
