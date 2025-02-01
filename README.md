@@ -1,5 +1,5 @@
 # HADES' KITTEN
-## Developer: arnav1001yt/ArnavDevelops.
+## Developer: [arnav1001yt/ArnavDevelops](https://github.com/ArnavDevelops), Contributor: [iris/heyirisdotdev](https://github.com/heyirisdotdev).
 I'm Hades' Kitten (perhaps), an useful nationstates.net bot for your server.
 
 ## Project Requirements
