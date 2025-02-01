@@ -17,6 +17,7 @@ export interface ICommand {
   autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
 }
 
+//Nation
 export interface Nation {
   $: {
     id: string;
@@ -105,4 +106,31 @@ interface Factbook {
   EDITED: string;
   VIEWS: string;
   SCORE: string;
+}
+
+//Region
+export interface Region {
+  $: {
+    id: string;
+  };
+  NAME: string;
+  NUMNATIONS: string;
+  NATIONS: string;
+  UNNATIONS: string;
+  DELEGATE: string;
+  OFFICERS: {
+    OFFICER: Officer[];
+  }
+  GOVERNOR: string;
+  FOUNDEDTIME: string;
+  POWER: string;
+  FLAG: string;
+  BANNERURL: string;
+}
+interface Officer {
+  NATION: string;
+  OFFICE: string;
+  TIME: string;
+  BY: string;
+  ORDER: string;
 }
