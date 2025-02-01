@@ -8,6 +8,7 @@ import cron from "node-cron";
 
 import env from "./env.ts";
 import { scheduleChannelNameUpdate } from "./scheduledTasks.ts";
+import logMessage from "./helpers/logging.ts";
 
 import registerEvents from "./handlers/events.ts";
 import registerInteractions from "./handlers/interactions.ts";
@@ -21,7 +22,7 @@ const client = new Client({
 });
 
 client.on(Events.ClientReady, async (client) => {
-  console.log(`Logged in as ${client.user.username} (${client.user.id})`);
+  logMessage(`Logged in as ${client.user.username} (${client.user.id})`, 'INFO');
   await Promise.all([registerEvents(client), registerInteractions(client)]);
 
   scheduleChannelNameUpdate(client);

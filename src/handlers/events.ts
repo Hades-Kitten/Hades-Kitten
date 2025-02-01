@@ -1,6 +1,7 @@
 import { type Client, Collection } from "discord.js";
 import type { IEvent } from "../types.ts";
 import { crawlDirectory, getHandlerPath } from "./_common.ts";
+import logMessage from "../helpers/logging.ts";
 
 async function getEvents(): Promise<Collection<string, IEvent>> {
   const eventFiles = new Collection<string, IEvent>();
@@ -17,17 +18,17 @@ async function getEvents(): Promise<Collection<string, IEvent>> {
 
 async function registerEvents(client: Client) {
   const events = await getEvents();
-  console.log(`events: found ${events.size} events`);
+  logMessage(`events: found ${events.size} events`, 'INFO');
 
   for (const event of events.values()) {
-    console.log(`events: registering event ${event.event}`);
+    logMessage(`events: registering event ${event.event}`, 'INFO');
     client[event.once ? "once" : "on"](
       event.event,
       event.execute.bind(null, client),
     );
   }
 
-  console.log(`events: registered ${events.size} events`);
+  logMessage(`events: registered ${events.size} events`, 'INFO');
 }
 
 export default registerEvents;

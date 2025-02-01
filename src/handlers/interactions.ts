@@ -9,6 +9,7 @@ import {
 import type { ICommand } from "../types.ts";
 import env from "../env.ts";
 import { crawlDirectory, getHandlerPath } from "./_common.ts";
+import logMessage from "../helpers/logging.ts";
 
 export const commands = new Collection<string, ICommand>();
 
@@ -16,7 +17,7 @@ async function getCommands(): Promise<ICommand[]> {
   const processFile = async (fileUrl: string) => {
     const { default: interaction } = await import(fileUrl);
     if (!interaction.data) {
-      console.error(`commands: ${fileUrl} missing data`);
+      logMessage(`commands: ${fileUrl} missing data`, 'ERROR');
       return;
     }
     commands.set(interaction.data.name, interaction);
@@ -41,20 +42,20 @@ async function registerInteractions(
   const rest = new REST({ version: "9" }).setToken(env.data.TOKEN);
 
   try {
-    console.log(`commands: registering ${interactions.length} commands`);
+    logMessage(`commands: registering ${interactions.length} commands`, 'INFO');
     await rest.put(Routes.applicationCommands(<Snowflake>client.user.id), {
       body: interactions,
     });
-    console.log(`commands: registered ${interactions.length} commands`);
+    logMessage(`commands: registered ${interactions.length} commands`, 'INFO');
   } catch (error) {
-    console.error("commands: failed to register commands");
+    logMessage("commands: failed to register commands", 'ERROR');
     console.error(error);
   }
 }
 
 async function registerCommands(client: Client) {
   const commands = await getCommands();
-  console.log(`commands: found ${commands.length} commands, registering...`);
+  logMessage(`commands: found ${commands.length} commands, registering...`, 'INFO');
 
   const interactions = commands.map((command) => command.data);
   await registerInteractions(client, interactions);
