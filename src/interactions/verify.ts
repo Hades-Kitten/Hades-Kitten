@@ -88,6 +88,8 @@ export async function execute(
                   .setDescription(`Welcome ${apiData?.nation}, enjoy your stay!`)
                 await msg.channel?.send({ embeds: [embed], ephemeral: true })
               } else if (jsonData.result == 0) {
+                await Verify.destroy({ where: { userId: msg.author.id, guildId: interaction.guild.id }})
+
                 const embed = new EmbedBuilder()
                   .setColor("Red")
                   .setTitle("Not successful try again!")
