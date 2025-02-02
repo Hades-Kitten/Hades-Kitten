@@ -30,15 +30,74 @@ function formatNumber(num: number): string {
   return num.toString();
 }
 
-
 const author = (nationData: Nation) => ({
   name: nationData.FULLNAME,
   iconURL: nationData.FLAG,
   url: `https://www.nationstates.net/nation=${encodeURIComponent(nationData.NAME)}`,
 });
 
-let economy2: any, ecofre: any, nomgdp: any, nomgdppercap: any, populationcensus: any, poorincome: any, richincome: any, wealthgaps: any = "";
+let economy2:any = "";
+let ecofre:any = "";
+let nomgdp:any = "";
+let nomgdppercap:any = "";
+let populationcensus:any = "";
+let poorincome:any = "";
+let richincome:any = "";
+let wealthgaps:any = "";
 
+function censusFun( nationData: Nation ) {
+const scaleArray = nationData.CENSUS.SCALE
+for (let i = 0; i < scaleArray.length; i++) {
+    let scale = scaleArray[i].$.id
+    const score = scaleArray[i].SCORE
+
+    if (scale == "1") {
+        economy2 = score;
+        console.log(economy2)
+    } else if (scale === "48") {
+        ecofre = score;
+    } else if (scale === "76") {
+        nomgdp = score;
+    } else if (scale === "72") {
+        nomgdppercap = score
+    } else if (scale === "3") {
+        populationcensus = score
+    } else if (scale === "73") {
+        poorincome = score
+    } else if (scale === "74") {
+        richincome = score
+    } else if (scale === "4") {
+        wealthgaps = score
+    }
+};
+};
+let ppp = (economy2 / 75) * (Math.pow(Math.pow((ecofre / 500), 2), 0.5) + 1)
+let GPPP = ppp * nomgdp
+
+async function economicPage(
+  nationData: Nation,
+): Promise<EmbedBuilder> {
+  return new EmbedBuilder()
+  .setTitle(`Economy of ${nationData.NAME}`)
+  .setDescription(`The economic system of ${nationData.NAME} is on work\n\n${nationData.INDUSTRYDESC}`)
+  .addFields(
+      { name: "**GDP (Nominal)**", value: formatNumber(Math.round(nomgdp)) },
+      { name: "**GDP Per Capita (Nominal)**", value: formatNumber(parseInt(nomgdppercap)) },
+      { name: "**Average Income of Poor (Nominal)**", value: formatNumber(parseInt(poorincome)), inline: true },
+      { name: "**Average Income of Rich (Nominal)**", value: formatNumber(parseInt(richincome)), inline: true },
+      { name: "**Economic Freedom**", value: formatNumber(ecofre) },
+      { name: "**Economy**", value: formatNumber(economy2) },
+      { name: "**Purchasing Power Parity (PPP)**", value: `$ ${formatNumber((ppp))}` },
+      { name: "**GDP PPP**", value: `$ ${formatNumber(Math.round(GPPP))}` },
+      { name: "**GDP PPP Per Capita**", value: `$ ${formatNumber((GPPP / populationcensus))}` },
+      { name: "**Average Income of Poor (PPP)**", value: formatNumber(parseInt(poorincome * ppp)), inline: true },
+      { name: "**Average Income of Rich (PPP)**", value: formatNumber(parseInt(richincome * ppp)), inline: true },
+      { name: "**Wealth gap**", value: wealthgaps, inline: true },
+      { name: "**Tax Rates**", value: nationData.TAX, inline: true },
+      { name: "**:factory: Major Industry**", value: nationData.MAJORINDUSTRY },
+  )
+  .setFooter({ text: 'Page 2/5', iconURL: nationData.FLAG })
+}
 async function generateGeneralInformationPage(
   nationData: Nation,
 ): Promise<EmbedBuilder> {
@@ -154,7 +213,7 @@ export async function execute(
         return;
       }
 
-      const pageFunctions = [generateGeneralInformationPage];
+      const pageFunctions = [generateGeneralInformationPage, economicPage];
       const maxPage = pageFunctions.length;
       let currentPage = 0;
 
@@ -187,7 +246,7 @@ export async function execute(
             .setCustomId(`${prefix}:goto:${currentPage + 1}`)
             .setLabel("Next")
             .setStyle(ButtonStyle.Primary)
-            .setDisabled(currentPage !== maxPage || disableAll),
+            .setDisabled(currentPage === maxPage - 1 || disableAll),
           new ButtonBuilder()
             .setLabel("Open on NationStates")
             .setStyle(ButtonStyle.Link)
@@ -209,6 +268,7 @@ export async function execute(
       });
 
       collector?.on("collect", async (i) => {
+        if(interaction.user.id === i.user.id) {
         if (i.customId.startsWith(`${interaction.id}:goto:`)) {
           const pageNumber = Number.parseInt(i.customId.split(":")[2]);
           if (
@@ -220,6 +280,9 @@ export async function execute(
             await updatePage();
             await i.deferUpdate();
           }
+        }
+        } else {
+          await i.reply({ content: "Not your buttons", flags: ["Ephemeral"]})
         }
       });
 
