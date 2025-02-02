@@ -120,13 +120,14 @@ export interface Region {
   DELEGATE: string;
   OFFICERS: {
     OFFICER: Officer[];
-  }
+  };
   GOVERNOR: string;
   FOUNDEDTIME: string;
   POWER: string;
   FLAG: string;
   BANNERURL: string;
 }
+
 interface Officer {
   NATION: string;
   OFFICE: string;
@@ -134,3 +135,7 @@ interface Officer {
   BY: string;
   ORDER: string;
 }
+
+export type VerifyData = {
+  result: string;
+};
