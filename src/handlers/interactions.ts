@@ -9,7 +9,7 @@ import {
 import type { ICommand } from "../types.ts";
 import env from "../env.ts";
 import { crawlDirectory, getHandlerPath } from "./_common.ts";
-import logMessage from "../helpers/logging.ts";
+import logMessage from "../utils/logging.ts";
 
 export const commands = new Collection<string, ICommand>();
 

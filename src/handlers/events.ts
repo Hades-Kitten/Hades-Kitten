@@ -1,7 +1,7 @@
 import { type Client, Collection } from "discord.js";
 import type { IEvent } from "../types.ts";
 import { crawlDirectory, getHandlerPath } from "./_common.ts";
-import logMessage from "../helpers/logging.ts";
+import logMessage from "../utils/logging.ts";
 
 async function getEvents(): Promise<Collection<string, IEvent>> {
   const eventFiles = new Collection<string, IEvent>();
