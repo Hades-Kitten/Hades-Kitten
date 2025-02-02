@@ -38,14 +38,20 @@ async function execute(
     .setLabel("Verify")
     .setStyle(ButtonStyle.Primary);
 
+  const linkButton = new ButtonBuilder()
+    .setURL("https://www.nationstates.net/page=verify_login")
+    .setLabel("Get verification code")
+    .setStyle(ButtonStyle.Link);
+
   const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    linkButton,
     verificationButton,
   );
 
   const embed = new EmbedBuilder()
     .setTitle("Verify Your Nation")
     .setDescription(
-      `Please go to [NationStates](https://www.nationstates.net/page=verify_login) to obtain your verification code. Then click the button to verify the nation: ${nationName}`,
+      `To verify ${nationName}, copy the code from the NationStates page and click the verify button.`,
     )
     .setColor("Random");
 
