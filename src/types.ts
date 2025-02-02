@@ -3,6 +3,7 @@ import type {
   ApplicationCommandData,
   BaseInteraction,
   AutocompleteInteraction,
+  ButtonInteraction,
 } from "discord.js";
 
 export interface IEvent {
@@ -15,6 +16,10 @@ export interface ICommand {
   data: ApplicationCommandData;
   execute: (client: Client, interaction: BaseInteraction) => Promise<void>;
   autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
+  buttonExecute?: (
+    client: Client,
+    interaction: ButtonInteraction,
+  ) => Promise<void>;
 }
 
 //Nation

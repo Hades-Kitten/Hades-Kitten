@@ -2,12 +2,12 @@ import {
   type ChatInputCommandInteraction,
   SlashCommandBuilder,
   EmbedBuilder,
-  ComponentType,
   ButtonStyle,
   ActionRowBuilder,
   ButtonBuilder,
-  type Client,
   ChannelType,
+  type Client,
+  type ButtonInteraction,
 } from "discord.js";
 import { fetch } from "bun";
 import xmlToJson from "../utils/xmlToJson";
@@ -231,7 +231,99 @@ const commandData = new SlashCommandBuilder()
       .setRequired(false),
   );
 
-export async function execute(
+async function fetchNationData(nationName: string) {
+  const apiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?nation=${encodeURIComponent(nationName)}&q=name+tax+majorindustry+region+influence+demonym2plural+demonym2+demonym+animal+industrydesc+demonym+banner+foundedtime+capital+tax+leader+religion+region+census+flag+currency+fullname+freedom+motto+factbooklist+policies+govt+sectors+population&scale=1+48+72+4+73+74+3+76`;
+  try {
+    const response = await fetch(apiUrl);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.text();
+    const jsonData = await xmlToJson<{ NATION: Nation }>(data);
+    return jsonData;
+  } catch (error) {
+    console.error("Error fetching or processing data:", error);
+    return null;
+  }
+}
+
+async function updatePage(
+  interaction: ChatInputCommandInteraction | ButtonInteraction,
+  nationName: string,
+  pageFunctions: ((nationData: Nation) => Promise<EmbedBuilder>)[],
+  currentPage: number,
+  maxPage: number,
+) {
+  const jsonData = await fetchNationData(nationName);
+  if (!jsonData || !jsonData.NATION) {
+    if (interaction.isCommand()) {
+      await interaction.editReply("Could not retrieve nation data.");
+      return;
+    }
+    if (interaction.isButton()) {
+      await interaction.reply({
+        content: "Could not retrieve nation data.",
+        flags: ["Ephemeral"],
+      });
+      return;
+    }
+    return;
+  }
+
+  const nationData = jsonData.NATION;
+  const buttonRow = new ActionRowBuilder<ButtonBuilder>();
+  const embed = await pageFunctions[currentPage](nationData);
+  embed.setFooter({
+    text: `Page ${currentPage + 1}/${maxPage}`,
+    iconURL: nationData.FLAG,
+  });
+
+  buttonRow.addComponents([
+    new ButtonBuilder()
+      .setCustomId(
+        `${commandData.name}:${nationName}:navigate:${currentPage - 1}`,
+      )
+      .setLabel("Previous")
+      .setStyle(ButtonStyle.Primary)
+      .setDisabled(currentPage === 0),
+    new ButtonBuilder()
+      .setCustomId(`${commandData.name}:${nationName}:pageindicator`)
+      .setLabel(`Page ${currentPage + 1} of ${maxPage}`)
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(true),
+    new ButtonBuilder()
+      .setCustomId(
+        `${commandData.name}:${nationName}:navigate:${currentPage + 1}`,
+      )
+      .setLabel("Next")
+      .setStyle(ButtonStyle.Primary)
+      .setDisabled(currentPage === maxPage - 1),
+    new ButtonBuilder()
+      .setLabel("Open on NationStates")
+      .setStyle(ButtonStyle.Link)
+      .setURL(
+        `https://www.nationstates.net/nation=${encodeURIComponent(nationData.NAME)}`,
+      ),
+  ]);
+
+  if (interaction.isButton()) {
+    await interaction.message.edit({
+      embeds: [embed],
+      components: [buttonRow],
+    });
+
+    await interaction.deferUpdate();
+    return;
+  }
+
+  if (interaction.isCommand()) {
+    await interaction.editReply({
+      embeds: [embed],
+      components: [buttonRow],
+    });
+    return;
+  }
+}
+
+async function execute(
   _client: Client,
   interaction: ChatInputCommandInteraction,
 ) {
@@ -239,16 +331,16 @@ export async function execute(
   await interaction.deferReply();
 
   const nationName = interaction.options.getString("nation");
-  const user = interaction.options.getUser("user") || interaction.user;
+  const mentionedUser = interaction.options.getUser("user");
 
   let nationToLookup: string | null = null;
 
   if (nationName) {
     nationToLookup = nationName;
   }
-  if (user) {
+  if (mentionedUser) {
     const userData = await Verify.findOne({
-      where: { userId: user.id, guildId: interaction.guild?.id },
+      where: { userId: mentionedUser.id, guildId: interaction.guild?.id },
     });
 
     if (userData) {
@@ -259,115 +351,46 @@ export async function execute(
         "This user's data is not available in the database. It could be that the user hasn't verified.",
       );
   }
-
   if (nationToLookup) {
-    const apiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?nation=${encodeURIComponent(nationToLookup)}&q=name+tax+majorindustry+region+influence+demonym2plural+demonym2+demonym+animal+industrydesc+demonym+banner+foundedtime+capital+tax+leader+religion+region+census+flag+currency+fullname+freedom+motto+factbooklist+policies+govt+sectors+population&scale=1+48+72+4+73+74+3+76`;
-
-    try {
-      const response = await fetch(apiUrl);
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.text();
-      const jsonData = await xmlToJson<{ NATION: Nation }>(data);
-
-      if (!jsonData || !jsonData.NATION) {
-        await interaction.editReply("Could not retrieve nation data.");
-        return;
-      }
-
-      const pageFunctions = [generateGeneralInformationPage, economicPage];
-      const maxPage = pageFunctions.length;
-      let currentPage = 0;
-
-      const updatePage = async (disableAll = false) => {
-        const buttonRow = new ActionRowBuilder<ButtonBuilder>();
-        const prefix = `${interaction.id}`;
-        const embed = await pageFunctions[currentPage](jsonData.NATION);
-        embed.setFooter({
-          text: `Page ${currentPage + 1}/${maxPage}`,
-          iconURL: jsonData.NATION.FLAG,
-        });
-
-        if (disableAll)
-          buttonRow.addComponents([
-            new ButtonBuilder()
-              .setCustomId(`${prefix}:expired`)
-              .setLabel("This interaction has expired.")
-              .setStyle(ButtonStyle.Danger)
-              .setDisabled(true),
-          ]);
-
-        buttonRow.addComponents([
-          new ButtonBuilder()
-            .setCustomId(`${prefix}:goto:${currentPage - 1}`)
-            .setLabel("Previous")
-            .setStyle(ButtonStyle.Primary)
-            .setDisabled(currentPage === 0 || disableAll),
-          new ButtonBuilder()
-            .setCustomId(`${prefix}:pageindicator`)
-            .setLabel(`Page ${currentPage + 1} of ${maxPage}`)
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(true),
-          new ButtonBuilder()
-            .setCustomId(`${prefix}:goto:${currentPage + 1}`)
-            .setLabel("Next")
-            .setStyle(ButtonStyle.Primary)
-            .setDisabled(currentPage === maxPage - 1 || disableAll),
-          new ButtonBuilder()
-            .setLabel("Open on NationStates")
-            .setStyle(ButtonStyle.Link)
-            .setURL(
-              `https://www.nationstates.net/nation=${encodeURIComponent(nationToLookup)}`,
-            ),
-        ]);
-
-        await interaction.editReply({
-          embeds: [embed],
-          components: [buttonRow],
-        });
-      };
-      await updatePage();
-
-      // TODO: Move away from using a collectors, instead handle button interactions in the interactionCreate event
-      //       Will mean there's no time limit (as is currently the case with the 10 minute limit)
-      const collector = interaction.channel?.createMessageComponentCollector({
-        componentType: ComponentType.Button,
-        filter: (i) => i.customId.startsWith(interaction.id),
-        time: 600_000, // 10 minutes
-      });
-
-      collector?.on("collect", async (i) => {
-        if (interaction.user.id === i.user.id) {
-          if (i.customId.startsWith(`${interaction.id}:goto:`)) {
-            const pageNumber = Number.parseInt(i.customId.split(":")[2]);
-            if (
-              !Number.isNaN(pageNumber) &&
-              pageNumber >= 0 &&
-              pageNumber < maxPage
-            ) {
-              currentPage = pageNumber;
-              await updatePage();
-              await i.deferUpdate();
-            }
-          }
-        } else {
-          await i.reply({ content: "Not your buttons", flags: ["Ephemeral"] });
-        }
-      });
-
-      collector?.on("end", async () => await updatePage(true));
-    } catch (error) {
-      console.error("Error fetching or processing data:", error);
-      await interaction.editReply(
-        "An error occurred while fetching or processing data. Did you spell the nation or region name correctly?",
-      );
-    }
+    const pageFunctions = [generateGeneralInformationPage, economicPage];
+    await updatePage(
+      interaction,
+      nationToLookup,
+      pageFunctions,
+      0,
+      pageFunctions.length,
+    );
   } else if (interaction.options.getString("region")) {
     await interaction.reply({ content: "On work", flags: ["Ephemeral"] });
+  }
+}
+
+async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
+  if (interaction.channel?.type !== ChannelType.GuildText) return;
+  const [commandName, nationName, action, pageString] =
+    interaction.customId.split(":");
+
+  if (action === "navigate") {
+    const page = Number.parseInt(pageString);
+    if (Number.isNaN(page)) {
+      return await interaction.followUp({
+        content: "Something went wrong",
+        flags: ["Ephemeral"],
+      });
+    }
+    const pageFunctions = [generateGeneralInformationPage, economicPage];
+    await updatePage(
+      interaction,
+      nationName,
+      pageFunctions,
+      page,
+      pageFunctions.length,
+    );
   }
 }
 
 export default {
   data: commandData,
   execute,
+  buttonExecute,
 };
