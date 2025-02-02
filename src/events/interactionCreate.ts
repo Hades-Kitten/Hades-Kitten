@@ -3,6 +3,7 @@ import {
   Events,
   type BaseInteraction,
   type ButtonInteraction,
+  type ModalSubmitInteraction,
 } from "discord.js";
 import { commands } from "../handlers/interactions";
 
@@ -32,6 +33,19 @@ export default {
         console.error(error);
         await interaction.reply({
           content: "There was an error while executing this button command!",
+          flags: ["Ephemeral"],
+        });
+      }
+    } else if (interaction.isModalSubmit()) {
+      const [commandName, ..._args] = interaction.customId.split(":");
+      const command = commands.get(commandName);
+      if (!command || !command.modalExecute) return;
+      try {
+        await command.modalExecute(client, interaction);
+      } catch (error) {
+        console.error(error);
+        await interaction.reply({
+          content: "There was an error while executing this modal!",
           flags: ["Ephemeral"],
         });
       }

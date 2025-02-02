@@ -4,6 +4,7 @@ import type {
   BaseInteraction,
   AutocompleteInteraction,
   ButtonInteraction,
+  ModalSubmitInteraction,
 } from "discord.js";
 
 export interface IEvent {
@@ -19,6 +20,10 @@ export interface ICommand {
   buttonExecute?: (
     client: Client,
     interaction: ButtonInteraction,
+  ) => Promise<void>;
+  modalExecute?: (
+    client: Client,
+    interaction: ModalSubmitInteraction,
   ) => Promise<void>;
 }
 
