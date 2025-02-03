@@ -3,6 +3,8 @@ import type {
   ApplicationCommandData,
   BaseInteraction,
   AutocompleteInteraction,
+  ButtonInteraction,
+  ModalSubmitInteraction,
 } from "discord.js";
 
 export interface IEvent {
@@ -15,6 +17,14 @@ export interface ICommand {
   data: ApplicationCommandData;
   execute: (client: Client, interaction: BaseInteraction) => Promise<void>;
   autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
+  buttonExecute?: (
+    client: Client,
+    interaction: ButtonInteraction,
+  ) => Promise<void>;
+  modalExecute?: (
+    client: Client,
+    interaction: ModalSubmitInteraction,
+  ) => Promise<void>;
 }
 
 //Nation
@@ -120,13 +130,14 @@ export interface Region {
   DELEGATE: string;
   OFFICERS: {
     OFFICER: Officer[];
-  }
+  };
   GOVERNOR: string;
   FOUNDEDTIME: string;
   POWER: string;
   FLAG: string;
   BANNERURL: string;
 }
+
 interface Officer {
   NATION: string;
   OFFICE: string;
@@ -134,3 +145,7 @@ interface Officer {
   BY: string;
   ORDER: string;
 }
+
+export type VerifyData = {
+  result: string;
+};

@@ -28,6 +28,13 @@ CLIENT_ID="your-client-id-here"
 DATE_CHANNEL_ID="your-date-channel-id-here"
 ```
 
+You then need to initialize the database by running:
+```bash
+bun db:sync
+```
+
+you will also need to do this whenever changes are made in the database models.
+
 Then, you can run the bot with:
 ```bash
 bun start

@@ -1,115 +1,158 @@
 import {
   type ChatInputCommandInteraction,
-  type Message,
   SlashCommandBuilder,
   EmbedBuilder,
-  ComponentType,
-  ButtonStyle,
+  type Client,
+  type ButtonInteraction,
   ActionRowBuilder,
   ButtonBuilder,
-  type Client,
-  ChannelType,
+  ButtonStyle,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  type ModalSubmitInteraction,
 } from "discord.js";
-import { parseStringPromise } from "xml2js";
-import Verify from "../models/verify";
 
-async function xmlToJson(xml: string) {
-  try {
-    return (await parseStringPromise(xml, { explicitArray: false })) as JSON;
-  } catch (error) {
-    console.error("Error converting XML to JSON:", error);
-    return null;
-  }
-}
+import xmlToJson from "../utils/xmlToJson";
+import Verify from "../models/verify";
+import type { VerifyData } from "../types";
 
 const commandData = new SlashCommandBuilder()
   .setName("verify")
   .setDescription("Verify your nation")
+  .addStringOption((option) =>
+    option
+      .setName("nation")
+      .setDescription("Your nation name")
+      .setRequired(true),
+  );
 
-export async function execute(
+async function execute(
   _client: Client,
   interaction: ChatInputCommandInteraction,
 ) {
+  const nationName = interaction.options.getString("nation", true);
+
+  const verificationButton = new ButtonBuilder()
+    .setCustomId(`${commandData.name}:${nationName}:verify`)
+    .setLabel("Verify")
+    .setStyle(ButtonStyle.Primary);
+
+  const linkButton = new ButtonBuilder()
+    .setURL("https://www.nationstates.net/page=verify_login")
+    .setLabel("Get verification code")
+    .setStyle(ButtonStyle.Link);
+
+  const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    linkButton,
+    verificationButton,
+  );
+
   const embed = new EmbedBuilder()
-    .setTitle("Verify")
-    .setDescription("Verify your nation to continue talking in this server!")
-    .setColor("Random")
-  await interaction.reply({ embeds: [embed], flags: ["Ephemeral"] })
+    .setTitle("Verify Your Nation")
+    .setDescription(
+      `To verify ${nationName}, copy the code from the NationStates page and click the verify button.`,
+    )
+    .setColor("Random");
 
-  const nationEmbed = new EmbedBuilder()
-    .setTitle("Input your Nation")
-    .setDescription("Write down your nation's name and post it. Warning: it should be `ABCNation` and not `Republic of ABCNation` and others")
-    .setColor("Random")
-  const msg = await interaction.user.send({ embeds: [nationEmbed] })
-  const filter = (m: Message) => interaction.user.id === m.author.id;
-  
-  const nationCollector = msg.channel.createMessageCollector({ filter: filter, max: 1, Time: 60000 })
-
-  nationCollector.on('collect', async (msg: Message) => {
-  const [data] = await Verify.findOrCreate({ where: { userId: interaction.user.id, guildId: interaction.guild?.id } });
-    await data.update({ nation: msg.content })
-
-    
-      const embed = new EmbedBuilder()
-        .setTitle("Input your verification code")
-        .setDescription("Go to https://www.nationstates.net/page=verify_login and copy the code and paste it here")
-        .setColor("Random")
-      await msg.channel?.send({ embeds: [embed] });
-
-      const CodeCollector = await msg.channel?.createMessageCollector({ filter, max: 1, Time: 60000 })
-
-      CodeCollector.on('collect', async (msg: Message) => {
-        await data.update({ code: msg.content })
-        const apiData = await Verify.findOne({ where: { userId: interaction.user.id, guildId: interaction.guild?.id } })
-        if(!apiData) {
-          const embed = new EmbedBuilder()
-            .setColor("Red")
-            .setTitle("Not successful try again!")
-            .setDescription(`No data found regarding you`)
-          await msg.channel?.send({ embeds: [embed], ephemeral: true }) 
-        }
-        const VerificationApiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?a=verify&nation=${apiData?.nation}&checksum=${apiData?.code}`
-
-        try {
-          const response = await fetch(VerificationApiUrl);
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-          const data = await response.text();
-          const xml = `<result>${data}</result>`;
-          const jsonData = await xmlToJson(xml);
-
-          if (!jsonData) {
-            await interaction.editReply("Could not retrieve nation data.");
-            return;
-            } else {
-              if (jsonData.result == 1) {
-                const embed = new EmbedBuilder()
-                  .setColor("Green")
-                  .setTitle("Succesfully verified!")
-                  .setDescription(`Welcome ${apiData?.nation}, enjoy your stay!`)
-                await msg.channel?.send({ embeds: [embed], ephemeral: true })
-              } else if (jsonData.result == 0) {
-                await Verify.destroy({ where: { userId: msg.author.id, guildId: interaction.guild.id }})
-
-                const embed = new EmbedBuilder()
-                  .setColor("Red")
-                  .setTitle("Not successful try again!")
-                  .setDescription(`Properly input your nation and login code in order to verify`)
-                await msg.channel?.send({ embeds: [embed], ephemeral: true })
-              }
-            }
-        } catch (error) {
-          console.error("Error fetching or processing data:", error);
-          await interaction.editReply(
-            "An error occurred while fetching or processing data. Did you spell the nation name correctly?",
-          );
-        }
-        console.log(msg.content)
-      })
-  })
+  await interaction.reply({
+    embeds: [embed],
+    components: [buttonRow],
+    flags: ["Ephemeral"],
+  });
 }
 
+async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
+  const [commandName, nationName] = interaction.customId.split(":");
+
+  const modal = new ModalBuilder()
+    .setCustomId(`${commandName}:${nationName}:modal`)
+    .setTitle("Nation Verification");
+
+  const verificationCodeInput = new TextInputBuilder()
+    .setCustomId("verificationCode")
+    .setLabel("Verification Code")
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder("Enter your verification code")
+    .setRequired(true);
+
+  const firstActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(
+    verificationCodeInput,
+  );
+
+  modal.addComponents(firstActionRow);
+  await interaction.showModal(modal);
+}
+
+async function modalExecute(
+  _client: Client,
+  interaction: ModalSubmitInteraction,
+) {
+  const [_commandName, nationName] = interaction.customId.split(":");
+
+  const code = interaction.fields.getTextInputValue("verificationCode");
+
+  await interaction.deferReply({ flags: ["Ephemeral"] });
+
+  const [data] = await Verify.findOrCreate({
+    where: { userId: interaction.user.id, guildId: interaction.guild?.id },
+  });
+
+  await data.update({ nation: nationName, code });
+
+  const VerificationApiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?a=verify&nation=${nationName}&checksum=${code}`;
+
+  try {
+    const response = await fetch(VerificationApiUrl);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const apiData = await response.text();
+    const xml = `<result>${apiData}</result>`;
+    const jsonData = await xmlToJson<VerifyData>(xml);
+
+    if (!jsonData) {
+      await interaction.editReply({
+        content: "Could not retrieve nation data, please try again.",
+      });
+      return;
+    }
+
+    const result = jsonData.result.replace("\n", "");
+
+    if (result === "1") {
+      const embed = new EmbedBuilder()
+        .setColor("Green")
+        .setTitle("Succesfully verified!")
+        .setDescription(`Welcome ${nationName}, enjoy your stay!`);
+      await interaction.editReply({ embeds: [embed] });
+    } else if (result === "0") {
+      if (interaction.guild)
+        await Verify.destroy({
+          where: { userId: interaction.user.id, guildId: interaction.guild.id },
+        });
+      const embed = new EmbedBuilder()
+        .setColor("Red")
+        .setTitle("Not successful try again!")
+        .setDescription(
+          "Properly input your nation and login code in order to verify",
+        );
+      await interaction.editReply({ embeds: [embed] });
+    } else {
+      await interaction.editReply({
+        content: "Could not retrieve nation data, please try again.",
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching or processing data:", error);
+    await interaction.editReply({
+      content:
+        "An error occurred while fetching or processing data. Did you spell the nation name correctly?",
+    });
+  }
+}
 
 export default {
   data: commandData,
   execute,
+  buttonExecute,
+  modalExecute,
 };
