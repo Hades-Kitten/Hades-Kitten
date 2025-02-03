@@ -77,13 +77,13 @@ export interface Nation {
   LEADER: string;
   CAPITAL: string;
   RELIGION: string;
-  POLICIES?: {
+  POLICIES: {
     POLICY: Policy[];
   };
   CENSUS: {
     SCALE: Scale[];
   };
-  FACTBOOKLIST?: {
+  FACTBOOKLIST: {
     FACTBOOK: Factbook[];
   };
 }

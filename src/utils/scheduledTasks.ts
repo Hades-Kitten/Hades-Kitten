@@ -1,7 +1,7 @@
 import type { Client, GuildBasedChannel } from "discord.js";
 import cron from "node-cron";
 
-import env from "./env.ts";
+import env from "../env.ts";
 
 async function updateChannelName(client: Client) {
   // TODO: don't use env variables for the channel id.

@@ -3,7 +3,7 @@ console.clear();
 import { Client, Events, GatewayIntentBits } from "discord.js";
 
 import env from "./env.ts";
-import { scheduleChannelNameUpdate } from "./scheduledTasks.ts";
+import { scheduleChannelNameUpdate } from "./utils/scheduledTasks.ts";
 import logMessage from "./utils/logging.ts";
 
 import registerEvents from "./handlers/events.ts";
