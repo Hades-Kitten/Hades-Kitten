@@ -16,20 +16,114 @@ import type { Nation } from "../types";
 import Verify from "../models/verify";
 
 function formatNumber(num: number): string {
+  if (num >= 1000000000000) return `${(num / 1000000000000).toFixed(1)}T`;
   if (num >= 1000000000) return `${(num / 1000000000).toFixed(1)}B`;
   if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
   if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+  if (num >= 1) return `${(num / 1).toFixed(2)}`
   return num.toString();
+}
+
+function pngfyFlag(flag: string) {
+  if (flag.endsWith('.svg')) return flag = flag.replace('.svg', '.png');
+  else return flag = flag;
 }
 
 const author = (nationData: Nation) => ({
   name: nationData.FULLNAME,
-  iconURL: nationData.FLAG,
+  iconURL: pngfyFlag(nationData.FLAG),
   url: `https://www.nationstates.net/nation=${encodeURIComponent(
     nationData.NAME,
   )}`,
 });
+function factbookListFun(nationData: Nation) {
+  let factbookembed = "";
+  const factbooklist = nationData.FACTBOOKLIST
+  if (factbooklist.FACTBOOK.length > 0) {
+    const factbooks = factbooklist.FACTBOOK
 
+    for (let i = 0; i < factbooks.length; i++) {
+      const id = factbooks[i].$.id
+
+      const title = factbooks[i].TITLE
+      const extractedTitle = title.replace(/<!\[CDATA\[\]\]>/, '').trim();
+
+      const subcat = factbooks[i].SUBCATEGORY
+
+      factbookembed += [
+        `-> **[${extractedTitle} - ${subcat}](https://www.nationstates.net/nation=${encodeURIComponent(nationData.NAME)}/detail=factbook/id=${id})**`
+      ].join('\n') + "\n"
+      if (factbookembed.length > 4090) {
+        factbookembed = factbookembed.toString().substring(0, 4090)
+      }
+    }
+  } else {
+    factbookembed += ["Unknown"]
+  }
+  return { factbookembed }
+}
+async function factbooksPage(nationData: Nation): Promise<EmbedBuilder> {
+  const { factbookembed } = factbookListFun(nationData)
+  return new EmbedBuilder()
+    .setTitle("Factbooks")
+    .setDescription(factbookembed || "<:nobitches:1242845720810356867> No Factbooks?")
+}
+function policiesFun(nationData: Nation) {
+  let policyembed = ``;
+  let gov = ``;
+  let society = ``;
+  let economy = ``;
+  let international = ``;
+  let lowandorder = ``;
+  let economicsystem = "";
+  for (const policy of nationData.POLICIES.POLICY) {
+    const name = policy?.NAME
+    const category = policy?.CAT
+    const desc = policy?.DESC
+
+    if (category == "Government") {
+      gov += [
+        `**${name}**`,
+        `> ${desc}`
+      ].join('\n') + "\n";
+    } else if (category == "Society") {
+      society += [
+        `**${name}**`,
+        `> ${desc}`
+      ].join('\n') + "\n";
+    } else if (category == "Economy") {
+      economy += [
+        `**${name}**`,
+        `> ${desc}`
+      ].join('\n') + "\n";
+    } else if (category == "International") {
+      international += [
+        `**${name}**`,
+        `> ${desc}`
+      ].join('\n') + "\n";
+    } else if (category == "Law & Order") {
+      lowandorder += [
+        `**${name}**`,
+        `> ${desc}`
+      ].join('\n') + "\n";
+    }
+
+    policyembed = `**Government:**\n${gov || "None\n"}\n **Society:**\n${society || "None\n"}\n **Law & Order:**\n${lowandorder || "None\n"}\n **Economy:**\n${economy || "None\n"}\n **International:**\n${international || "None\n"}`
+
+    if (name == "Capitalism") {
+      economicsystem = ":dollar: Capitalism - an economic and political system in which property, business, and industry are controlled by private owners rather than by the state, with the purpose of making a profit";
+    } else if (name === "Socialism") {
+      economicsystem = ":classical_building: Socialism - a social and economic doctrine that calls for public rather than private ownership or control of property and natural resources.";
+    }
+  };
+  return { economicsystem, policyembed }
+}
+async function policiesPage(nationData: Nation): Promise<EmbedBuilder> {
+  const { policyembed } = policiesFun(nationData)
+  return new EmbedBuilder()
+    .setTitle("Policies")
+    .setDescription(policyembed)
+}
 function censusFun(nationData: Nation) {
   const scaleArray = nationData.CENSUS.SCALE;
   let economy2 = 0;
@@ -63,7 +157,7 @@ function censusFun(nationData: Nation) {
       wealthgaps = score;
     }
   }
-  const ppp = (economy2 / 75) * (ecofre / 500 ** 2) ** 0.5 + 1;
+  const ppp = (economy2 / 75) * (Math.pow(Math.pow((ecofre / 500), 2), 0.5) + 1)
   const GPPP = ppp * nomgdp;
 
   return {
@@ -79,7 +173,28 @@ function censusFun(nationData: Nation) {
     GPPP,
   };
 }
-
+async function expenditurePage(nationData: Nation): Promise<EmbedBuilder> {
+  const { nomgdp } = censusFun(nationData);
+  const sectors = nationData.SECTORS;
+  const gov = nationData.GOVT;
+  return new EmbedBuilder()
+    .setTitle(`Expenditure of ${nationData.NAME}`)
+    .setDescription(`About ${sectors.GOVERNMENT}% of ${formatNumber(nomgdp)} Nominal GDP is spent on expenditures (${formatNumber(Math.round(nomgdp * (sectors.GOVERNMENT as unknown as number / 100)))} Nominal GDP)`)
+    .addFields(
+      { name: ":classical_building: Administration", value: `${gov.ADMINISTRATION}%`, inline: true },
+      { name: ":shield: Defence", value: `${gov.DEFENCE}%`, inline: true },
+      { name: ":book: Education", value: `${gov.EDUCATION}%`, inline: true },
+      { name: ":maple_leaf: Environment", value: `${gov.ENVIRONMENT}%`, inline: true },
+      { name: ":anatomical_heart: Healthcare", value: `${gov.HEALTHCARE}%`, inline: true },
+      { name: ":shopping_bags: Commerce", value: `${gov.COMMERCE}%`, inline: true },
+      { name: ":handshake: International Aid", value: `${gov.INTERNATIONALAID}%`, inline: true },
+      { name: ":scales: Law and Order", value: `${gov.LAWANDORDER}%`, inline: true },
+      { name: ":bullettrain_side: Public Transport", value: `${gov.PUBLICTRANSPORT}%`, inline: true },
+      { name: ":peace: Social Equality", value: `${gov.SOCIALEQUALITY}%`, inline: true },
+      { name: ":palms_up_together: Spirituality", value: `${gov.SPIRITUALITY}%`, inline: true },
+      { name: ":relieved: Welfare", value: `${gov.WELFARE}%`, inline: true },
+    )
+}
 async function economicPage(nationData: Nation): Promise<EmbedBuilder> {
   const {
     economy2,
@@ -93,10 +208,11 @@ async function economicPage(nationData: Nation): Promise<EmbedBuilder> {
     ppp,
     GPPP,
   } = censusFun(nationData);
+  const { economicsystem } = policiesFun(nationData)
   return new EmbedBuilder()
     .setTitle(`Economy of ${nationData.NAME}`)
     .setDescription(
-      `The economic system of ${nationData.NAME} is on work\n\n${nationData.INDUSTRYDESC}`,
+      `The economic system of ${nationData.NAME} is ${economicsystem}\n\n${nationData.INDUSTRYDESC}`,
     )
     .addFields(
       { name: "**GDP (Nominal)**", value: formatNumber(Math.round(nomgdp)) },
@@ -140,7 +256,6 @@ async function economicPage(nationData: Nation): Promise<EmbedBuilder> {
       { name: "**:factory: Major Industry**", value: nationData.MAJORINDUSTRY },
     );
 }
-
 async function generateGeneralInformationPage(
   nationData: Nation,
 ): Promise<EmbedBuilder> {
@@ -175,8 +290,8 @@ async function generateGeneralInformationPage(
         name: "Population",
         value: nationData.POPULATION
           ? `${formatNumber(
-              Number.parseInt(nationData.POPULATION) * 1000000,
-            )} ${nationData.DEMONYM2PLURAL}`
+            Number.parseInt(nationData.POPULATION) * 1000000,
+          )} ${nationData.DEMONYM2PLURAL}`
           : "N/A",
         inline: true,
       },
@@ -201,8 +316,8 @@ async function generateGeneralInformationPage(
         name: "Founded",
         value: nationData.FOUNDEDTIME
           ? `<t:${Math.round(
-              Number.parseInt(nationData.FOUNDEDTIME),
-            )}:d>, <t:${Math.round(Number.parseInt(nationData.FOUNDEDTIME))}:t>`
+            Number.parseInt(nationData.FOUNDEDTIME),
+          )}:d>, <t:${Math.round(Number.parseInt(nationData.FOUNDEDTIME))}:t>`
           : "N/A",
         inline: true,
       },
@@ -273,7 +388,7 @@ async function updatePage(
   const embed = await pageFunctions[currentPage](nationData);
   embed.setFooter({
     text: `Page ${currentPage + 1}/${maxPage}`,
-    iconURL: nationData.FLAG,
+    iconURL: pngfyFlag(nationData.FLAG),
   });
 
   buttonRow.addComponents([
@@ -305,6 +420,7 @@ async function updatePage(
   ]);
 
   if (interaction.isButton()) {
+    if(interaction.user)
     await interaction.message.edit({
       embeds: [embed],
       components: [buttonRow],
@@ -331,14 +447,14 @@ async function execute(
   await interaction.deferReply();
 
   const nationName = interaction.options.getString("nation");
-  const mentionedUser = interaction.options.getUser("user");
+  const mentionedUser = interaction.options.getUser("user")
 
   let nationToLookup: string | null = null;
 
-  if (nationName) {
+  if (nationName && mentionedUser == null) {
     nationToLookup = nationName;
   }
-  if (mentionedUser) {
+  if (mentionedUser && nationName == null) {
     const userData = await Verify.findOne({
       where: { userId: mentionedUser.id, guildId: interaction.guild?.id },
     });
@@ -350,9 +466,21 @@ async function execute(
       return await interaction.editReply(
         "This user's data is not available in the database. It could be that the user hasn't verified.",
       );
+  } else if (mentionedUser == null && nationName == null) {
+    const userData = await Verify.findOne({
+      where: { userId: interaction.user.id, guildId: interaction.guild?.id },
+    });
+
+    if (userData) {
+      nationToLookup = userData.get("nation") as string | null;
+    }
+    if (!nationToLookup)
+      return await interaction.editReply(
+        "This user's data is not available in the database. It could be that the user hasn't verified.",
+      );
   }
   if (nationToLookup) {
-    const pageFunctions = [generateGeneralInformationPage, economicPage];
+    const pageFunctions = [generateGeneralInformationPage, economicPage, expenditurePage, policiesPage, factbooksPage];
     await updatePage(
       interaction,
       nationToLookup,
@@ -378,7 +506,7 @@ async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
         flags: ["Ephemeral"],
       });
     }
-    const pageFunctions = [generateGeneralInformationPage, economicPage];
+    const pageFunctions = [generateGeneralInformationPage, economicPage, expenditurePage, policiesPage, factbooksPage];
     await updatePage(
       interaction,
       nationName,
