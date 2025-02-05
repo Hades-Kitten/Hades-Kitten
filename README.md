@@ -43,7 +43,7 @@ bun dev # if you want the bot to restart automatically when you make changes
 
 ## Project's To-do List
 - [ ] All types of Information Command (i.e., nation info, region info, nation info by mention)
-- [ ] Nation Verification System
+- [X] Nation Verification System
 - [ ] Activity logger
 
 ## Miscellaneous

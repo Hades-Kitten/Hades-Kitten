@@ -4,7 +4,7 @@ import Sequelize from "sequelize";
 const Verify = sequelize.define('verify', { 
     userId: {
         type: Sequelize.STRING,
-        primaryKey: true
+        allowNull: true,
     },
     guildId: {
         type: Sequelize.STRING,
