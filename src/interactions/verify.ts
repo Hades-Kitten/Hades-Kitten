@@ -11,15 +11,18 @@ import {
   TextInputBuilder,
   TextInputStyle,
   type ModalSubmitInteraction,
+  InteractionContextType,
 } from "discord.js";
 
 import xmlToJson from "../utils/xmlToJson";
 import Verify from "../models/verify";
 import type { VerifyData } from "../types";
+import verify_role from "../models/verifyRole";
 
 const commandData = new SlashCommandBuilder()
   .setName("verify")
   .setDescription("Verify your nation")
+  .setContexts(InteractionContextType.Guild)
   .addStringOption((option) =>
     option
       .setName("nation")
@@ -97,7 +100,8 @@ async function modalExecute(
   const [data] = await Verify.findOrCreate({
     where: { userId: interaction.user.id, guildId: interaction.guild?.id },
   });
-
+  if(!data) return;
+  const verifyrole = await verify_role.findOne({ where: { guildId: interaction.guild?.id } })
   await data.update({ nation: nationName, code });
 
   const VerificationApiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?a=verify&nation=${nationName}&checksum=${code}`;
@@ -119,16 +123,25 @@ async function modalExecute(
     const result = jsonData.result.replace("\n", "");
 
     if (result === "1") {
-      const embed = new EmbedBuilder()
-        .setColor("Green")
-        .setTitle("Succesfully verified!")
-        .setDescription(`Welcome ${nationName}, enjoy your stay!`);
-      await interaction.editReply({ embeds: [embed] });
+      if (!verifyrole) {
+        const embed = new EmbedBuilder()
+          .setColor("Green")
+          .setTitle("Succesfully verified!")
+          .setDescription(`Welcome ${nationName}, enjoy your stay!`);
+        await interaction.editReply({ embeds: [embed] });
+      } else {
+        const role = interaction.guild?.roles.cache.get(verifyrole?.roleId);
+        await interaction.member?.roles.add(role?.id)
+        const embed = new EmbedBuilder()
+          .setColor("Green")
+          .setTitle("Succesfully verified!")
+          .setDescription(`Welcome ${nationName}, enjoy your stay!`);
+        await interaction.editReply({ embeds: [embed] });
+      }
     } else if (result === "0") {
-      if (interaction.guild)
-        await Verify.destroy({
-          where: { userId: interaction.user.id, guildId: interaction.guild.id },
-        });
+      await Verify.destroy({
+        where: { userId: interaction.user.id, guildId: interaction.guild?.id },
+      });
       const embed = new EmbedBuilder()
         .setColor("Red")
         .setTitle("Not successful try again!")
@@ -145,7 +158,7 @@ async function modalExecute(
     console.error("Error fetching or processing data:", error);
     await interaction.editReply({
       content:
-        "An error occurred while fetching or processing data. Did you spell the nation name correctly?",
+        "An error occurred while fetching or processing data. Did you spell the nation name correctly or give the bot the essential permissions to assign the required role?",
     });
   }
 }
