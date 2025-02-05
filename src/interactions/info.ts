@@ -8,6 +8,7 @@ import {
   ChannelType,
   type Client,
   type ButtonInteraction,
+  InteractionContextType,
 } from "discord.js";
 import { fetch } from "bun";
 import xmlToJson from "../utils/xmlToJson";
@@ -327,6 +328,7 @@ async function generateGeneralInformationPage(
 const commandData = new SlashCommandBuilder()
   .setName("info")
   .setDescription("Get info about a nation")
+  .setContexts(InteractionContextType.Guild)
   .addStringOption((option) =>
     option
       .setName("nation")
