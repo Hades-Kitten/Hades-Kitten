@@ -178,3 +178,21 @@ export interface RMBMessage {
   LIKERS: string;
   MESSAGE: string;
 }
+
+export interface Profile {
+  userId: string;
+  guildId: string;
+  handle: string;
+  bio?: string;
+  profilePicture?: string;
+  bannerPicture?: string;
+  location?: string;
+  followers: string[];
+  following: string[];
+}
+
+export interface Post {
+  profileId: string;
+  content: string;
+  timestamp: string;
+}

@@ -18,14 +18,14 @@ export default {
         await command.execute(client, interaction);
       } catch (error) {
         console.error(error);
-        interaction.deferReply({ flags: ['Ephemeral']})
+        interaction.deferReply({ flags: ["Ephemeral"] });
         await interaction.followUp({
           content: "There was an error while executing this command!",
           flags: ["Ephemeral"],
         });
       }
     } else if (interaction.isButton()) {
-      const [commandName, ...args] = interaction.customId.split(":");
+      const [commandName, ..._args] = interaction.customId.split(":");
       const command = commands.get(commandName);
       if (!command || !command.buttonExecute) return;
       try {
@@ -49,6 +49,14 @@ export default {
           content: "There was an error while executing this modal!",
           flags: ["Ephemeral"],
         });
+      }
+    } else if (interaction.isAutocomplete()) {
+      const command = commands.get(interaction.commandName);
+      if (!command || !command.autocomplete) return;
+      try {
+        await command.autocomplete(interaction);
+      } catch (error) {
+        console.error(error);
       }
     }
   },
