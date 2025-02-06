@@ -77,13 +77,13 @@ export interface Nation {
   LEADER: string;
   CAPITAL: string;
   RELIGION: string;
-  POLICIES: {
+  POLICIES?: {
     POLICY: Policy[];
   };
   CENSUS: {
     SCALE: Scale[];
   };
-  FACTBOOKLIST: {
+  FACTBOOKLIST?: {
     FACTBOOK: Factbook[];
   };
 }
@@ -126,7 +126,7 @@ export interface Region {
   NAME: string;
   NUMNATIONS: string;
   NATIONS: string;
-  EMBASSIES: Embassy[];
+  UNNATIONS: string;
   DELEGATE: string;
   OFFICERS: {
     OFFICER: Officer[];
@@ -136,10 +136,6 @@ export interface Region {
   POWER: string;
   FLAG: string;
   BANNERURL: string;
-}
-
-interface Embassy {
-  EMBASSY: string;
 }
 
 interface Officer {
@@ -153,3 +149,32 @@ interface Officer {
 export type VerifyData = {
   result: string;
 };
+
+export interface SSEEvent {
+  id: string;
+  time: string;
+  str: string;
+}
+
+export interface RMB {
+  REGION: {
+    $: {
+      id: string;
+    };
+    MESSAGES: {
+      POST: RMBMessage[];
+    };
+  };
+}
+
+export interface RMBMessage {
+  $: {
+    id: string;
+  };
+  TIMESTAMP: string;
+  NATION: string;
+  STATUS: string;
+  LIKES: string;
+  LIKERS: string;
+  MESSAGE: string;
+}
