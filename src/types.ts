@@ -126,7 +126,7 @@ export interface Region {
   NAME: string;
   NUMNATIONS: string;
   NATIONS: string;
-  UNNATIONS: string;
+  EMBASSIES: Embassy[];
   DELEGATE: string;
   OFFICERS: {
     OFFICER: Officer[];
@@ -136,6 +136,10 @@ export interface Region {
   POWER: string;
   FLAG: string;
   BANNERURL: string;
+}
+
+interface Embassy {
+  EMBASSY: string;
 }
 
 interface Officer {

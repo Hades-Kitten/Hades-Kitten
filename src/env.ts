@@ -4,6 +4,7 @@ const envSchema = z.object({
   TOKEN: z.string(),
   CLIENT_ID: z.string(),
   DATE_CHANNEL_ID: z.string(),
+  USER_AGENT: z.string()
 });
 
 function validateEnv() {

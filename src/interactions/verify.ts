@@ -100,9 +100,8 @@ async function modalExecute(
   const [data] = await Verify.findOrCreate({
     where: { userId: interaction.user.id, guildId: interaction.guild?.id },
   });
-  if(!data) return;
   const verifyrole = await verify_role.findOne({ where: { guildId: interaction.guild?.id } })
-  await data.update({ nation: nationName, code });
+  await data.update({ nation: nationName, code: code });
 
   const VerificationApiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?a=verify&nation=${nationName}&checksum=${code}`;
 
