@@ -14,6 +14,18 @@ const Tweet = sequelize.define("tweet", {
     type: Sequelize.DATE,
     defaultValue: Sequelize.NOW,
   },
+  messageId: {
+    type: Sequelize.STRING,
+    allowNull: true,
+  },
+  replyToTweetId: {
+    type: Sequelize.INTEGER,
+    allowNull: true,
+    references: {
+      model: "tweets",
+      key: "id",
+    },
+  },
 });
 
 export default Tweet;
