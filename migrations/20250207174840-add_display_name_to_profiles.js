@@ -3,14 +3,20 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn("profiles", "displayName", {
-      type: Sequelize.STRING,
-      allowNull: false,
-      defaultValue: Sequelize.col("handle"),
-    });
+    const tableInfo = await queryInterface.describeTable("profiles");
+    if (tableInfo && !tableInfo.displayName) {
+      await queryInterface.addColumn("profiles", "displayName", {
+        type: Sequelize.STRING,
+        allowNull: false,
+        defaultValue: Sequelize.col("handle"),
+      });
+    }
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn("profiles", "displayName");
+    const tableInfo = await queryInterface.describeTable("profiles");
+    if (tableInfo.displayName) {
+      await queryInterface.removeColumn("profiles", "displayName");
+    }
   },
 };
