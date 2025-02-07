@@ -40,23 +40,25 @@ async function generateNationsPage(regionData: Region): Promise<EmbedBuilder> {
     .setDescription(`${formatter.formatNationsArray(regionData.NATIONS) || "Unknown"}`)
 }
 async function generateEmbassiesPage(regionData: Region): Promise<EmbedBuilder> {
-  let embassiesArray = [""]
-  const embassies = regionData.EMBASSIES
-  for (let i = 0; i < embassies.length; i++) {
-    const embassy = embassies[i].EMBASSY;
-    const embassyName = embassy.trim()
-    if (!embassy.includes("type=\"invited\"") || !embassy.includes("type=\"rejected\"")) {
-      embassiesArray.push(embassyName);
+  const embassiesArray: string[] = [];
+
+  if (regionData.EMBASSIES && Array.isArray(regionData.EMBASSIES.EMBASSY)) {
+    for (const embassy of regionData.EMBASSIES.EMBASSY) {
+      if (typeof embassy === 'string') {
+        embassiesArray.push(embassy.trim());
+      }
     }
   }
-  let nonRejectedEmbassies = embassiesArray.join(", ");
 
-  let replacedNonRejectedEmbassies;
+  const nonRejectedEmbassies = embassiesArray.join(", ");
+
+  let replacedNonRejectedEmbassies: string;
   if (nonRejectedEmbassies.length > 4096) {
-    replacedNonRejectedEmbassies = nonRejectedEmbassies.toString().substring(0, 4096)
+    replacedNonRejectedEmbassies = nonRejectedEmbassies.substring(0, 4096);
   } else {
-    replacedNonRejectedEmbassies = nonRejectedEmbassies
+    replacedNonRejectedEmbassies = nonRejectedEmbassies;
   }
+
   return new EmbedBuilder()
     .setAuthor(regionAuthor(regionData))
     .setTitle("Embassies")
@@ -82,7 +84,7 @@ async function generateRegionalGeneralInformationPage(regionData: Region): Promi
 
 function factbookListFun(nationData: Nation) {
   let factbookembed = "";
-  const factbooks = nationData.FACTBOOKLIST.FACTBOOK || null
+  const factbooks = nationData.FACTBOOKLIST?.FACTBOOK || null
   if (factbooks == null || factbooks.length == 0 as any) {
     factbookembed += ["Unknown"]
   } else for (let i = 0; i < factbooks.length; i++) {
@@ -117,7 +119,7 @@ function policiesFun(nationData: Nation) {
   let international = ``;
   let lowandorder = ``;
   let economicsystem = "";
-  for (const policy of nationData.POLICIES.POLICY) {
+  for (const policy of nationData.POLICIES?.POLICY ?? []) {
     const name = policy?.NAME
     const category = policy?.CAT
     const desc = policy?.DESC
@@ -440,7 +442,7 @@ async function updatePage(
   const jsonData = await fetchNationData(nationName);
   if (!jsonData || !jsonData.NATION) {
     if (interaction.isCommand()) {
-      await interaction.editReply("Could not retrieve nation data.");
+      await interaction.reply("Could not retrieve nation data.");
       return;
     }
     if (interaction.isButton()) {
@@ -501,7 +503,7 @@ async function updatePage(
   }
 
   if (interaction.isCommand()) {
-    await interaction.editReply({
+    await interaction.reply({
       embeds: [embed],
       components: [buttonRow],
     });
@@ -519,7 +521,7 @@ async function updateRegionPage(
   const jsonData = await fetchRegionData(regionName);
   if (!jsonData || !jsonData.REGION) {
     if (interaction.isCommand()) {
-      await interaction.editReply("Could not retrieve regional data.");
+      await interaction.reply("Could not retrieve regional data.");
       return;
     }
     if (interaction.isButton()) {
@@ -579,7 +581,7 @@ async function updateRegionPage(
     return;
   }
   if (interaction.isCommand()) {
-    await interaction.editReply({
+    await interaction.reply({
       embeds: [embed],
       components: [buttonRow],
     });
@@ -592,7 +594,6 @@ async function execute(
   interaction: ChatInputCommandInteraction,
 ) {
   if (interaction.channel?.type !== ChannelType.GuildText) return;
-  await interaction.deferReply();
 
   const nationName = interaction.options.getString("nation");
   const mentionedUser = interaction.options.getUser("user")
@@ -604,7 +605,7 @@ async function execute(
   if (regionName) optionsProvided++;
 
   if (optionsProvided > 1) {
-    await interaction.followUp({ content: 'You can only provide one option at a time.', flags: ["Ephemeral"] });
+    await interaction.reply('You can only provide one option at a time.');
     return;
   }
 
@@ -621,7 +622,7 @@ async function execute(
       nationToLookup = userData.get("nation") as string | null;
     }
     if (!nationToLookup)
-      return await interaction.editReply(
+      return await interaction.reply(
         "This user's data is not available in the database. It could be that the user hasn't verified.",
       );
   } else if (mentionedUser == null && regionName == null && nationName == null) {
@@ -633,7 +634,7 @@ async function execute(
       nationToLookup = userData.get("nation") as string | null;
     }
     if (!nationToLookup)
-      return await interaction.editReply(
+      return await interaction.reply(
         "This user's data is not available in the database. It could be that the user hasn't verified.",
       );
   }
