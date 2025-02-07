@@ -1,55 +1,63 @@
-# HADES' KITTEN
-## Developer: [arnav1001yt/ArnavDevelops](https://github.com/ArnavDevelops), Contributor: [iris/heyirisdotdev](https://github.com/heyirisdotdev).
-I'm Hades' Kitten (perhaps), an useful nationstates.net bot for your server.
+# Hades' Kitten
 
-## Project Requirements
-- bun, discord.js and other additional packages required for the bot.
-- Completing the To-Do List.
+A NationStates bot for Discord, written in TypeScript.
+
+Developed by [Arnav](https://github.com/ArnavDevelops/) and [iris](https://github.com/heyirisdotdev/)
 
 ## Developing
 
-First, you need to have [Bun](https://bun.sh) installed, it's a drop-in replacement for npm and
-Node and npm that supports Typescript out of the box. Make sure you're on v1.2.0 or later.
+First off, make sure that you have [Bun](https://bun.sh) installed. Bun is a drop-in replacement for npm and Node that
+supports TypeScript out of the box. Make sure you're on v1.2.0 or later.
 
-Then, clone the repository and install the dependencies
-```
-git clone https://github.com/ArnavDevelops/Hades-Kitten.git hades-kitten
+Then, clone the repository and install the dependencies:
+
+```bash
+git clone https://github.com/Hades-Kitten/Hades-Kitten.git ./hades-kitten/
 cd hades-kitten
 bun install
 ```
 
-To run the bot, you need to have a Discord bot token. You can get one by creating a new bot
-on the [Discord Developer Portal](https://discord.dev/), and then copying the token.
+To run the bot, you need to have a Discord bot token. You can get one by creating a new bot on the
+[Discord Developer Portal](https://discord.dev/), and then copying the token.
 
-Create a file called `.env` in the root of the project, and add the following line to it:
+Create a file called `.env` in the root of the project, and add the following lines to it:
+
 ```env
-TOKEN="your-token-here"
-CLIENT_ID="your-client-id-here"
-DATE_CHANNEL_ID="your-date-channel-id-here"
+TOKEN=""
+CLIENT_ID=""
+USER_AGENT=""
 ```
 
 You then need to initialize the database by running:
+
 ```bash
 bun db:sync
 ```
 
-you will also need to do this whenever changes are made in the database models.
+You will also need to do this whenever changes are made in the database models.
 
-Then, you can run the bot with:
+Finally, you can run the bot with:
+
 ```bash
 bun start
 bun dev # if you want the bot to restart automatically when you make changes
 ```
 
-## Project's To-do List
+## Roadmap
+
 - [ ] All types of Information Command (i.e., nation info, region info, nation info by mention)
-- [X] Nation Verification System
+- [x] Nation Verification System
 - [ ] Activity logger
 
-## Miscellaneous
-**Extra Information regarding the Discord bot**
-- The Bot's invite will become public after the to-do list is completed.
+## Copying
 
-## Relevant Links
-https://discord.js.org/
-https://www.bun.sh/
+Hades' Kitten is licensed under the copyleft GNU Affero General Public License v3.0. You can find a copy of the license
+in the [LICENSE](./LICENSE) file.
+
+All files in this repository are licensed under the same GNU Affero General Public License v3.0 unless explicitly stated
+otherwise.
+
+In simple terms, this means that you are free to use, modify, and distribute this software, as long as you provide the
+source code to your users and distribute it under the same license. Commercial use is allowed, but you must provide the
+source code to your users. This does not constitute legal advice; please read the full license text and/or consult a
+lawyer if you have any questions.

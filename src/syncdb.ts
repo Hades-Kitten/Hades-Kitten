@@ -1,7 +1,24 @@
+import VerifyRole from "./models/verifyRole";
 import Verify from "./models/verify";
-import verify_role from "./models/verifyRole";
+import Region from "./models/region";
+import Profile from "./models/profile";
+import Tweet from "./models/tweet";
+
 import sequealize from "./utils/database";
 
-sequealize.sync({ force: true })
-Verify.sync({force: true})
-verify_role.sync({force: true})
+async function syncDatabase() {
+  await sequealize.sync();
+  await Verify.sync();
+  await VerifyRole.sync();
+  await Region.sync();
+  await Profile.sync();
+  await Tweet.sync();
+}
+
+syncDatabase()
+  .then(() => {
+    console.log("Database synced!");
+  })
+  .catch((err) => {
+    console.error("Error syncing database:", err);
+  });

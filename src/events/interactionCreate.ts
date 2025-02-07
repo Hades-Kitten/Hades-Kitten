@@ -18,16 +18,21 @@ export default {
         await command.execute(client, interaction);
       } catch (error) {
         console.error(error);
-        interaction.deferReply({ flags: ['Ephemeral']})
+        interaction.deferReply({ flags: ["Ephemeral"] });
         await interaction.followUp({
           content: "There was an error while executing this command!",
           flags: ["Ephemeral"],
         });
       }
     } else if (interaction.isButton()) {
-      const [commandName, ...args] = interaction.customId.split(":");
+      const [commandName, ..._args] = interaction.customId.split(":");
       const command = commands.get(commandName);
-      if (!command || !command.buttonExecute) return;
+      if (!command || !command.buttonExecute) {
+        return interaction.reply({
+          content: "Couldn't find the associated command!",
+          flags: ["Ephemeral"],
+        });
+      }
       try {
         await command.buttonExecute(client, interaction);
       } catch (error) {
@@ -47,6 +52,30 @@ export default {
         console.error(error);
         await interaction.reply({
           content: "There was an error while executing this modal!",
+          flags: ["Ephemeral"],
+        });
+      }
+    } else if (interaction.isAutocomplete()) {
+      const command = commands.get(interaction.commandName);
+      if (!command || !command.autocomplete) return;
+      try {
+        await command.autocomplete(interaction);
+      } catch (error) {
+        console.error(error);
+      }
+    } else if (interaction.isStringSelectMenu()) {
+      const command = commands.get(interaction.customId.split(":")[0]);
+      if (!command || !command.selectMenuExecute)
+        return interaction.reply({
+          content: "Couldn't find the associated command!",
+          flags: ["Ephemeral"],
+        });
+      try {
+        await command.selectMenuExecute(client, interaction);
+      } catch (error) {
+        console.error(error);
+        await interaction.reply({
+          content: "There was an error while executing this select menu!",
           flags: ["Ephemeral"],
         });
       }

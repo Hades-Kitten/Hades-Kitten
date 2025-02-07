@@ -8,6 +8,7 @@ import logMessage from "./utils/logging.ts";
 
 import registerEvents from "./handlers/events.ts";
 import registerInteractions from "./handlers/interactions.ts";
+import sseEvents from "./events/sse.ts";
 
 const client = new Client({
   intents: (Object.values(GatewayIntentBits) as (string | number)[])
@@ -22,6 +23,7 @@ client.on(Events.ClientReady, async (client) => {
   );
   await Promise.all([registerEvents(client), registerInteractions(client)]);
   scheduleChannelNameUpdate(client);
+  sseEvents.execute(client);
 });
 
 await client.login(env.data.TOKEN);
