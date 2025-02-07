@@ -13,47 +13,31 @@ import {
 import { fetch } from "bun";
 import xmlToJson from "../utils/xmlToJson";
 import env from "../env.ts";
+import formatter from "../utils/formatStringsAndNumbers.ts";
 
 import type { Nation, Region } from "../types";
 import Verify from "../models/verify";
 
-function formatNumber(num: number): string {
-  if (num >= 1000000000000) return `${(num / 1000000000000).toFixed(1)}T`;
-  if (num >= 1000000000) return `${(num / 1000000000).toFixed(1)}B`;
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-  if (num >= 1) return `${(num / 1).toFixed(2)}`
-  return num.toString();
-}
-
-function pngfyFlag(flag: string) {
-  if (flag.endsWith('.svg')) return flag = flag.replace('.svg', '.png');
-  else return flag = flag;
-}
-
 const nationAuthor = (nationData: Nation) => ({
   name: nationData.FULLNAME,
-  iconURL: pngfyFlag(nationData.FLAG),
+  iconURL: formatter.FormatNSFlag(nationData.FLAG),
   url: `https://www.nationstates.net/nation=${encodeURIComponent(
     nationData.NAME,
   )}`,
 });
 const regionAuthor = (regionData: Region) => ({
   name: regionData.NAME,
-  iconURL: pngfyFlag(regionData.FLAG),
+  iconURL: formatter.FormatNSFlag(regionData.FLAG),
   url: `https://www.nationstates.net/region=${encodeURIComponent(
     regionData.NAME,
   )}`,
 });
-async function generateNationsPage(regionData: Region): Promise<EmbedBuilder> {
-  const fixedNations = regionData.NATIONS.replaceAll(":", ",");
-  let replacedText = fixedNations.match(/[^,]+/g).map((nation) => `[${nation}](https://www.nationstates.com/nation=${nation})`).join(',');
-  if (replacedText.length > 4086) replacedText = replacedText.toString().substring(0, 4086)
 
+async function generateNationsPage(regionData: Region): Promise<EmbedBuilder> {
   return new EmbedBuilder()
     .setAuthor(regionAuthor(regionData))
     .setTitle("Nations")
-    .setDescription(`Nations: ${replacedText || "Unknown"}`)
+    .setDescription(`${formatter.formatNationsArray(regionData.NATIONS) || "Unknown"}`)
 }
 async function generateEmbassiesPage(regionData: Region): Promise<EmbedBuilder> {
   let embassiesArray = [""]
@@ -62,10 +46,10 @@ async function generateEmbassiesPage(regionData: Region): Promise<EmbedBuilder> 
     const embassy = embassies[i].EMBASSY;
     const embassyName = embassy.trim()
     if (!embassy.includes("type=\"invited\"") || !embassy.includes("type=\"rejected\"")) {
-        embassiesArray.push(embassyName);
+      embassiesArray.push(embassyName);
     }
-}
-let nonRejectedEmbassies = embassiesArray.join(", ");
+  }
+  let nonRejectedEmbassies = embassiesArray.join(", ");
 
   let replacedNonRejectedEmbassies;
   if (nonRejectedEmbassies.length > 4096) {
@@ -78,6 +62,7 @@ let nonRejectedEmbassies = embassiesArray.join(", ");
     .setTitle("Embassies")
     .setDescription(`${replacedNonRejectedEmbassies || "Unknown"}`)
 }
+
 async function generateRegionalGeneralInformationPage(regionData: Region): Promise<EmbedBuilder> {
   let wadelegate = regionData.DELEGATE ? `[${regionData.DELEGATE}](https://www.nationstates.com/nation=${regionData.DELEGATE})` : `Power Vaccum`;
 
@@ -123,6 +108,7 @@ async function factbooksPage(nationData: Nation): Promise<EmbedBuilder> {
     .setTitle("Factbooks")
     .setDescription(factbookembed || "<:nobitches:1242845720810356867> No Factbooks?")
 }
+
 function policiesFun(nationData: Nation) {
   let policyembed = ``;
   let gov = ``;
@@ -179,6 +165,7 @@ async function policiesPage(nationData: Nation): Promise<EmbedBuilder> {
     .setTitle("Policies")
     .setDescription(policyembed)
 }
+
 function censusFun(nationData: Nation) {
   const scaleArray = nationData.CENSUS.SCALE;
   let economy2 = 0;
@@ -228,13 +215,14 @@ function censusFun(nationData: Nation) {
     GPPP,
   };
 }
+
 async function expenditurePage(nationData: Nation): Promise<EmbedBuilder> {
   const { nomgdp } = censusFun(nationData);
   const sectors = nationData.SECTORS;
   const gov = nationData.GOVT;
   return new EmbedBuilder()
     .setTitle(`Expenditure of ${nationData.NAME}`)
-    .setDescription(`About ${sectors.GOVERNMENT}% of ${formatNumber(nomgdp)} Nominal GDP is spent on expenditures (${formatNumber(Math.round(nomgdp * (sectors.GOVERNMENT as unknown as number / 100)))} Nominal GDP)`)
+    .setDescription(`About ${sectors.GOVERNMENT}% of ${formatter.formatNumber(nomgdp)} Nominal GDP is spent on expenditures (${formatter.formatNumber(Math.round(nomgdp * (sectors.GOVERNMENT as unknown as number / 100)))} Nominal GDP)`)
     .addFields(
       { name: ":classical_building: Administration", value: `${gov.ADMINISTRATION}%`, inline: true },
       { name: ":shield: Defence", value: `${gov.DEFENCE}%`, inline: true },
@@ -250,6 +238,7 @@ async function expenditurePage(nationData: Nation): Promise<EmbedBuilder> {
       { name: ":relieved: Welfare", value: `${gov.WELFARE}%`, inline: true },
     )
 }
+
 async function economicPage(nationData: Nation): Promise<EmbedBuilder> {
   const {
     economy2,
@@ -270,40 +259,40 @@ async function economicPage(nationData: Nation): Promise<EmbedBuilder> {
       `The economic system of ${nationData.NAME} is ${economicsystem}\n\n${nationData.INDUSTRYDESC}`,
     )
     .addFields(
-      { name: "**GDP (Nominal)**", value: formatNumber(Math.round(nomgdp)) },
+      { name: "**GDP (Nominal)**", value: formatter.formatNumber(Math.round(nomgdp)) },
       {
         name: "**GDP Per Capita (Nominal)**",
-        value: formatNumber(Number.parseInt(nomgdppercap.toString())),
+        value: formatter.formatNumber(Number.parseInt(nomgdppercap.toString())),
       },
       {
         name: "**Average Income of Poor (Nominal)**",
-        value: formatNumber(Number.parseInt(poorincome.toString())),
+        value: formatter.formatNumber(Number.parseInt(poorincome.toString())),
         inline: true,
       },
       {
         name: "**Average Income of Rich (Nominal)**",
-        value: formatNumber(Number.parseInt(richincome.toString())),
+        value: formatter.formatNumber(Number.parseInt(richincome.toString())),
         inline: true,
       },
-      { name: "**Economic Freedom**", value: formatNumber(ecofre) },
-      { name: "**Economy**", value: formatNumber(economy2) },
+      { name: "**Economic Freedom**", value: formatter.formatNumber(ecofre) },
+      { name: "**Economy**", value: formatter.formatNumber(economy2) },
       {
         name: "**Purchasing Power Parity (PPP)**",
-        value: `$ ${formatNumber(ppp)}`,
+        value: `$ ${formatter.formatNumber(ppp)}`,
       },
-      { name: "**GDP PPP**", value: `$ ${formatNumber(Math.round(GPPP))}` },
+      { name: "**GDP PPP**", value: `$ ${formatter.formatNumber(Math.round(GPPP))}` },
       {
         name: "**GDP PPP Per Capita**",
-        value: `$ ${formatNumber(GPPP / populationcensus)}`,
+        value: `$ ${formatter.formatNumber(GPPP / populationcensus)}`,
       },
       {
         name: "**Average Income of Poor (PPP)**",
-        value: formatNumber(Number.parseInt((poorincome * ppp).toString())),
+        value: formatter.formatNumber(Number.parseInt((poorincome * ppp).toString())),
         inline: true,
       },
       {
         name: "**Average Income of Rich (PPP)**",
-        value: formatNumber(Number.parseInt((richincome * ppp).toString())),
+        value: formatter.formatNumber(Number.parseInt((richincome * ppp).toString())),
         inline: true,
       },
       { name: "**Wealth gap**", value: wealthgaps.toString(), inline: true },
@@ -311,6 +300,7 @@ async function economicPage(nationData: Nation): Promise<EmbedBuilder> {
       { name: "**:factory: Major Industry**", value: nationData.MAJORINDUSTRY },
     );
 }
+
 async function generateGeneralInformationPage(
   nationData: Nation,
 ): Promise<EmbedBuilder> {
@@ -344,7 +334,7 @@ async function generateGeneralInformationPage(
       {
         name: "Population",
         value: nationData.POPULATION
-          ? `${formatNumber(
+          ? `${formatter.formatNumber(
             Number.parseInt(nationData.POPULATION) * 1000000,
           )} ${nationData.DEMONYM2PLURAL}`
           : "N/A",
@@ -408,12 +398,31 @@ async function fetchNationData(nationName: string) {
     const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
-          'User-Agent': env.data.USER_AGENT
+        'User-Agent': env.data.USER_AGENT
       }
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.text();
     const jsonData = await xmlToJson<{ NATION: Nation }>(data);
+    return jsonData;
+  } catch (error) {
+    console.error("Error fetching or processing data:", error);
+    return null;
+  }
+}
+
+async function fetchRegionData(regionName: string) {
+  const apiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?region=${encodeURIComponent(regionName)}&q=name+flag+bannerurl+power+numnations+nations+embassies+foundedtime+governor+officers+delegate+wanations`;
+  try {
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        'User-Agent': env.data.USER_AGENT
+      }
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.text();
+    const jsonData = await xmlToJson<{ REGION: Region }>(data);
     return jsonData;
   } catch (error) {
     console.error("Error fetching or processing data:", error);
@@ -449,7 +458,7 @@ async function updatePage(
   const embed = await pageFunctions[currentPage](nationData);
   embed.setFooter({
     text: `Page ${currentPage + 1}/${maxPage}`,
-    iconURL: pngfyFlag(nationData.FLAG),
+    iconURL: formatter.FormatNSFlag(nationData.FLAG),
   });
 
   buttonRow.addComponents([
@@ -491,6 +500,84 @@ async function updatePage(
     return;
   }
 
+  if (interaction.isCommand()) {
+    await interaction.editReply({
+      embeds: [embed],
+      components: [buttonRow],
+    });
+    return;
+  }
+}
+
+async function updateRegionPage(
+  interaction: ChatInputCommandInteraction | ButtonInteraction,
+  regionName: string,
+  pageFunctions: ((regionData: Region) => Promise<EmbedBuilder>)[],
+  currentPage: number,
+  maxPage: number,
+) {
+  const jsonData = await fetchRegionData(regionName);
+  if (!jsonData || !jsonData.REGION) {
+    if (interaction.isCommand()) {
+      await interaction.editReply("Could not retrieve regional data.");
+      return;
+    }
+    if (interaction.isButton()) {
+      await interaction.reply({
+        content: "Could not retrieve nation data.",
+        flags: ["Ephemeral"],
+      });
+      return;
+    }
+    return;
+  }
+
+  const regionData = jsonData.REGION;
+  const buttonRow = new ActionRowBuilder<ButtonBuilder>();
+  const embed = await pageFunctions[currentPage](regionData);
+  embed.setFooter({
+    text: `Page ${currentPage + 1}/${maxPage}`,
+    iconURL: formatter.FormatNSFlag(regionData.FLAG),
+  });
+
+  buttonRow.addComponents([
+    new ButtonBuilder()
+      .setCustomId(
+        `${commandData.name}:${regionName}:turn:${currentPage - 1}`,
+      )
+      .setLabel("Previous")
+      .setStyle(ButtonStyle.Primary)
+      .setDisabled(currentPage === 0),
+    new ButtonBuilder()
+      .setCustomId(`${commandData.name}:${regionName}:pageindicator`)
+      .setLabel(`Page ${currentPage + 1} of ${maxPage}`)
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(true),
+    new ButtonBuilder()
+      .setCustomId(
+        `${commandData.name}:${regionName}:turn:${currentPage + 1}`,
+      )
+      .setLabel("Next")
+      .setStyle(ButtonStyle.Primary)
+      .setDisabled(currentPage === maxPage - 1),
+    new ButtonBuilder()
+      .setLabel("Open on NationStates")
+      .setStyle(ButtonStyle.Link)
+      .setURL(
+        `https://www.nationstates.net/region=${encodeURIComponent(regionData.NAME)}`,
+      ),
+  ]);
+
+  if (interaction.isButton()) {
+    if (interaction.user)
+      await interaction.message.edit({
+        embeds: [embed],
+        components: [buttonRow],
+      });
+
+    await interaction.deferUpdate();
+    return;
+  }
   if (interaction.isCommand()) {
     await interaction.editReply({
       embeds: [embed],
@@ -562,102 +649,6 @@ async function execute(
   }
 
   if (mentionedUser == null && nationName == null && regionName !== null) {
-    async function fetchRegionData(regionName: string) {
-      const apiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?region=${encodeURIComponent(regionName)}&q=name+flag+bannerurl+power+numnations+nations+embassies+foundedtime+governor+officers+delegate+wanations`;
-      try {
-        const response = await fetch(apiUrl, {
-          method: "GET",
-          headers: {
-              'User-Agent': env.data.USER_AGENT
-          }
-      });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.text();
-        const jsonData = await xmlToJson<{ REGION: Region }>(data);
-        return jsonData;
-      } catch (error) {
-        console.error("Error fetching or processing data:", error);
-        return null;
-      }
-    }
-
-    async function updateRegionPage(
-      interaction: ChatInputCommandInteraction | ButtonInteraction,
-      regionName: string,
-      pageFunctions: ((regionData: Region) => Promise<EmbedBuilder>)[],
-      currentPage: number,
-      maxPage: number,
-    ) {
-      const jsonData = await fetchRegionData(regionName);
-      if (!jsonData || !jsonData.REGION) {
-        if (interaction.isCommand()) {
-          await interaction.editReply("Could not retrieve regional data.");
-          return;
-        }
-        if (interaction.isButton()) {
-          await interaction.reply({
-            content: "Could not retrieve nation data.",
-            flags: ["Ephemeral"],
-          });
-          return;
-        }
-        return;
-      }
-
-      const regionData = jsonData.REGION;
-      const buttonRow = new ActionRowBuilder<ButtonBuilder>();
-      const embed = await pageFunctions[currentPage](regionData);
-      embed.setFooter({
-        text: `Page ${currentPage + 1}/${maxPage}`,
-        iconURL: pngfyFlag(regionData.FLAG),
-      });
-
-      buttonRow.addComponents([
-        new ButtonBuilder()
-          .setCustomId(
-            `${commandData.name}:${regionName}:turn:${currentPage - 1}`,
-          )
-          .setLabel("Previous")
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(currentPage === 0),
-        new ButtonBuilder()
-          .setCustomId(`${commandData.name}:${regionName}:pageindicator`)
-          .setLabel(`Page ${currentPage + 1} of ${maxPage}`)
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(true),
-        new ButtonBuilder()
-          .setCustomId(
-            `${commandData.name}:${regionName}:turn:${currentPage + 1}`,
-          )
-          .setLabel("Next")
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(currentPage === maxPage - 1),
-        new ButtonBuilder()
-          .setLabel("Open on NationStates")
-          .setStyle(ButtonStyle.Link)
-          .setURL(
-            `https://www.nationstates.net/region=${encodeURIComponent(regionData.NAME)}`,
-          ),
-      ]);
-
-      if (interaction.isButton()) {
-        if (interaction.user)
-          await interaction.message.edit({
-            embeds: [embed],
-            components: [buttonRow],
-          });
-
-        await interaction.deferUpdate();
-        return;
-      }
-      if (interaction.isCommand()) {
-        await interaction.editReply({
-          embeds: [embed],
-          components: [buttonRow],
-        });
-        return;
-      }
-    }
     const pageFunctions = [generateRegionalGeneralInformationPage, generateNationsPage, generateEmbassiesPage];
     await updateRegionPage(
       interaction,
@@ -698,8 +689,8 @@ async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
         flags: ["Ephemeral"],
       });
     }
-    const pageFunctions = [generateRegionalGeneralInformationPage, generateEmbassiesPage, generateNationsPage];
-    await updatePage(
+    const pageFunctions = [generateRegionalGeneralInformationPage, generateNationsPage, generateEmbassiesPage];
+    await updateRegionPage(
       interaction,
       nationName,
       pageFunctions,
