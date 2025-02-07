@@ -9,9 +9,7 @@ export default {
   async execute(client: Client, interaction: BaseInteraction) {
     if (interaction.isCommand()) {
       const command = commands.get(interaction.commandName);
-      logger.info(
-        `Received command ${interaction.commandName} from ${interaction.user.username}`,
-      );
+      logger.info(`Received command ${interaction.commandName}`);
       if (!command) return;
       try {
         await command.execute(client, interaction);

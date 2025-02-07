@@ -141,6 +141,11 @@ async function modalExecute(
 
       const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
+          .setCustomId(`post:${tweet.get("id")}:like`)
+          .setLabel("0")
+          .setEmoji("❤️")
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
           .setCustomId(`post:${tweet.get("id")}:reply`)
           .setLabel("Reply")
           .setStyle(ButtonStyle.Primary),
@@ -174,6 +179,16 @@ async function modalExecute(
           content: "Tweet not found!",
           flags: ["Ephemeral"],
         });
+
+      const tweetProfile = await Profile.findOne({
+        where: { id: tweet.get("profileId") },
+      });
+      if (!tweetProfile)
+        return await interaction.reply({
+          content: "Profile not found!",
+          flags: ["Ephemeral"],
+        });
+
       const interactionChannel = client.channels.cache.get(
         interaction.channelId,
       ) as BaseGuildTextChannel;
@@ -195,8 +210,7 @@ async function modalExecute(
           iconURL: (profile.get("profilePicture") as string) ?? undefined,
         })
         .setDescription(
-          `
-          ${content}`,
+          `**[Replying to @${tweetProfile.get("handle")}](${message.url})** q${content}`,
         )
         .setTimestamp(tweet.get("timestamp") as Date)
         .setColor("Blue");
@@ -240,6 +254,11 @@ async function modalExecute(
 
       const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
+          .setCustomId(`post:${replyModel.get("id")}:like`)
+          .setLabel("0")
+          .setEmoji("❤️")
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
           .setCustomId(`post:${replyModel.get("id")}:reply`)
           .setLabel("Reply")
           .setStyle(ButtonStyle.Primary),
@@ -255,10 +274,29 @@ async function modalExecute(
       });
 
       await replyModel.update({ messageId: replyMessage.id });
-      await interaction.reply({
-        content: `Replied! Find it here ${replyMessage.url}`,
-        flags: ["Ephemeral"],
+      await interaction.deferUpdate();
+
+      const originalTweetProfile = await Profile.findOne({
+        where: { id: tweet.get("profileId") },
       });
+
+      if (originalTweetProfile) {
+        const user = await client.users.fetch(
+          originalTweetProfile.get("userId") as string,
+        );
+
+        if (!user) return;
+        if (originalTweetProfile.get("notificationsEnabled")) {
+          try {
+            await user.send({
+              content: `@${profile.get("handle")} (${profile.get("displayName")}) replied to your tweet`,
+              embeds: [message.embeds[0], embed],
+            });
+          } catch (error) {
+            console.error("Failed to send DM:", error);
+          }
+        }
+      }
 
       break;
     }
@@ -292,7 +330,7 @@ async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
         });
 
       const options = profiles.map((profile) => ({
-        label: `@${profile.get("handle")}`,
+        label: `@${profile.get("handle")} (${profile.get("displayName")})`,
         value: profile.get("handle") as string,
       }));
 
@@ -317,6 +355,40 @@ async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
       const embed = await getProfileEmbed(handle);
       if (!embed) return await interaction.reply("Profile not found!");
       await interaction.reply({ embeds: [embed], flags: ["Ephemeral"] });
+
+      break;
+    }
+
+    case "like": {
+      const profiles = await Profile.findAll({
+        where: { userId: interaction.user.id, guildId: interaction.guildId },
+      });
+
+      if (profiles.length === 0)
+        return await interaction.reply({
+          content: "Create a profile first.",
+          flags: ["Ephemeral"],
+        });
+
+      const options = profiles.map((profile) => ({
+        label: `@${profile.get("handle")} (${profile.get("displayName")})`,
+        value: profile.get("handle") as string,
+      }));
+
+      const select = new StringSelectMenuBuilder()
+        .setCustomId(`post:${tweetId}:pickLikeProfile`)
+        .setPlaceholder("Select a profile to Like with")
+        .setOptions(options);
+
+      const firstActionRow =
+        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
+      await interaction.reply({
+        content: "Pick a profile to like this post with.",
+        components: [firstActionRow],
+        flags: ["Ephemeral"],
+      });
+
+      break;
     }
   }
 }
@@ -327,7 +399,6 @@ async function selectMenuExecute(
 ) {
   const [_command, tweetId, ...rest] = interaction.customId.split(":");
   const tweet = await Tweet.findOne({ where: { id: tweetId } });
-
   if (!tweet) {
     await interaction.reply({
       content: "Tweet not found!",
@@ -336,34 +407,109 @@ async function selectMenuExecute(
     return;
   }
 
-  const handle = interaction.values[0];
-  const profile = await Profile.findOne({ where: { handle } });
+  if (rest[0] === "pickProfile") {
+    const handle = interaction.values[0];
+    const profile = await Profile.findOne({ where: { handle } });
 
-  if (!profile) {
+    if (!profile) {
+      await interaction.reply({
+        content: "Profile not found!",
+        flags: ["Ephemeral"],
+      });
+      return;
+    }
+
+    const modal = new ModalBuilder()
+      .setCustomId(`post:${handle}:reply:${tweetId}`)
+      .setTitle(`Reply to @${tweet.get("handle")}'s tweet`);
+
+    const replyInput = new TextInputBuilder()
+      .setCustomId("replyContent")
+      .setLabel("What's on your mind?")
+      .setStyle(TextInputStyle.Paragraph)
+      .setMaxLength(280)
+      .setRequired(true);
+
+    const firstActionRow =
+      new ActionRowBuilder<TextInputBuilder>().addComponents(replyInput);
+
+    modal.addComponents(firstActionRow);
+    await interaction.showModal(modal);
+  } else if (rest[0] === "pickLikeProfile") {
+    const handle = interaction.values[0];
+    const tweet = await Tweet.findOne({ where: { id: tweetId } });
+
+    if (!tweet) {
+      await interaction.reply({
+        content: "Tweet not found!",
+        flags: ["Ephemeral"],
+      });
+      return;
+    }
+
+    const profile = await Profile.findOne({ where: { handle } });
+    if (!profile) {
+      await interaction.reply({
+        content: "Profile not found!",
+        flags: ["Ephemeral"],
+      });
+      return;
+    }
+
+    const likes = tweet.get("likes") as string[];
+    const profileId = profile.get("id") as string;
+
+    if (likes.includes(profileId))
+      tweet.set(
+        "likes",
+        likes.filter((id) => id !== profileId),
+      );
+    else tweet.set("likes", [...likes, profileId]);
+
+    await interaction.deferUpdate();
+    await tweet.save();
+  }
+
+  const tweetUpdated = await Tweet.findOne({ where: { id: tweetId } });
+  if (!tweetUpdated) return await interaction.reply("Tweet not found!");
+
+  const tweetProfile = await Profile.findOne({
+    where: { id: tweetUpdated.get("profileId") },
+  });
+  if (!tweetProfile) {
     await interaction.reply({
       content: "Profile not found!",
       flags: ["Ephemeral"],
     });
     return;
   }
+  const newButtonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`post:${tweetUpdated.get("id")}:like`)
+      .setEmoji("❤️")
+      .setLabel(`${tweetUpdated.getDataValue("likes").length ?? 0}`)
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+      .setCustomId(`post:${tweetUpdated.get("id")}:reply`)
+      .setLabel("Reply")
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+      .setCustomId(
+        `post:${tweetUpdated.get("id")}:viewProfile:${tweetProfile.get("handle")}`,
+      )
+      .setLabel("View Profile")
+      .setStyle(ButtonStyle.Secondary),
+  );
+  const interactionChannel = _client.channels.cache.get(
+    interaction.channelId,
+  ) as BaseGuildTextChannel;
 
-  const modal = new ModalBuilder()
-    .setCustomId(`post:${handle}:reply:${tweetId}`)
-    .setTitle(`Reply to @${tweet.get("handle")}'s tweet`);
-
-  const replyInput = new TextInputBuilder()
-    .setCustomId("replyContent")
-    .setLabel("What's on your mind?")
-    .setStyle(TextInputStyle.Paragraph)
-    .setMaxLength(280)
-    .setRequired(true);
-
-  const firstActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(
-    replyInput,
+  const message = await interactionChannel.messages.fetch(
+    tweetUpdated.get("messageId") as string,
   );
 
-  modal.addComponents(firstActionRow);
-  await interaction.showModal(modal);
+  await message.edit({ components: [newButtonRow] });
+  await tweet.update({ messageId: message.id });
 }
 
 export default {

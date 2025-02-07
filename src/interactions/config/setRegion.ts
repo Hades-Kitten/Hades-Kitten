@@ -7,7 +7,7 @@ import {
   PermissionFlagsBits,
 } from "discord.js";
 
-import Region from "../models/region";
+import Region from "../../models/region";
 
 const commandData = new SlashCommandBuilder()
   .setName("setregion")

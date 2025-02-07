@@ -2,7 +2,10 @@ import {
   SlashCommandBuilder,
   type ChatInputCommandInteraction,
   type Client,
+  type StringSelectMenuInteraction,
   EmbedBuilder,
+  StringSelectMenuBuilder,
+  ActionRowBuilder,
 } from "discord.js";
 
 import { getProfileEmbed } from "../../utils/commands/twitter/profile";
@@ -110,6 +113,24 @@ const commandData = new SlashCommandBuilder()
         option
           .setName("user")
           .setDescription("The user whose profiles to list"),
+      ),
+  )
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName("notifications")
+      .setDescription("Enable or disable notifications for a profile")
+      .addStringOption((option) =>
+        option
+          .setName("handle")
+          .setDescription("The handle to modify")
+          .setAutocomplete(true)
+          .setRequired(true),
+      )
+      .addBooleanOption((option) =>
+        option
+          .setName("enabled")
+          .setDescription("Whether notifications should be enabled")
+          .setRequired(true),
       ),
   );
 
@@ -248,7 +269,6 @@ async function execute(
 
     case "list": {
       const user = interaction.options.getUser("user") ?? interaction.user;
-
       const profiles = await Profile.findAll({ where: { userId: user.id } });
 
       if (profiles.length === 0) {
@@ -258,8 +278,54 @@ async function execute(
 
       const embed = new EmbedBuilder()
         .setTitle(`${user.username}'s Profiles`)
-        .setDescription(profiles.map((p) => `@${p.get("handle")}`).join("\n"))
+        .setDescription(
+          profiles
+            .map((p) => `**@${p.get("handle")}** ${p.get("displayName")}`)
+            .join("\n"),
+        )
         .setColor("Blue");
+
+      const options = profiles.map((profile) => ({
+        label: `@${profile.get("handle")} (${profile.get("displayName")})`,
+        value: profile.get("handle") as string,
+      }));
+
+      const actionRow =
+        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+          new StringSelectMenuBuilder()
+            .setCustomId("profile:select")
+            .setPlaceholder("Select a profile")
+            .setOptions(options),
+        );
+
+      await interaction.editReply({ embeds: [embed], components: [actionRow] });
+      break;
+    }
+
+    case "notifications": {
+      const handle = interaction.options.getString("handle", true);
+      const enabled = interaction.options.getBoolean("enabled", true);
+
+      const profile = await Profile.findOne({
+        where: {
+          handle,
+          userId: interaction.user.id,
+          guildId: interaction.guildId,
+        },
+      });
+
+      if (!profile) {
+        await interaction.editReply("Profile not found or you don't own it!");
+        return;
+      }
+
+      await profile.update({ notificationsEnabled: enabled });
+
+      const embed = new EmbedBuilder()
+        .setTitle(
+          `Notifications ${enabled ? "enabled" : "disabled"} for @${handle}'s Profile`,
+        )
+        .setColor(enabled ? "Green" : "Red");
 
       await interaction.editReply({ embeds: [embed] });
       break;
@@ -267,8 +333,22 @@ async function execute(
   }
 }
 
+async function selectMenuExecute(
+  _client: Client,
+  interaction: StringSelectMenuInteraction,
+) {
+  if (interaction.customId !== "profile:select") return;
+
+  const handle = interaction.values[0];
+  const embed = await getProfileEmbed(handle);
+  if (!embed) return await interaction.reply("Profile not found!");
+
+  await interaction.update({ embeds: [embed] });
+}
+
 export default {
   data: commandData,
   execute,
+  selectMenuExecute,
   autocomplete,
 };

@@ -7,8 +7,6 @@ async function migrateProfiles(logger: Logger) {
   profileLogger.info("Migrating profiles...");
 
   try {
-    await sequelize.sync();
-
     const profiles = await Profile.findAll();
 
     for (const profile of profiles) {
