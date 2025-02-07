@@ -5,6 +5,7 @@ import type {
   AutocompleteInteraction,
   ButtonInteraction,
   ModalSubmitInteraction,
+  StringSelectMenuInteraction,
 } from "discord.js";
 
 import type { Model } from "sequelize";
@@ -26,6 +27,10 @@ export interface ICommand {
   modalExecute?: (
     client: Client,
     interaction: ModalSubmitInteraction,
+  ) => Promise<void>;
+  selectMenuExecute?: (
+    client: Client,
+    interaction: StringSelectMenuInteraction,
   ) => Promise<void>;
 }
 
