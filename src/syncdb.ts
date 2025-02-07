@@ -16,7 +16,7 @@ async function syncDatabase() {
   await VerifyRole.sync();
   await Region.sync();
   await Profile.sync();
-  await Tweet.sync({ alter: true });
+  await Tweet.sync();
 
   await runMigrations(logger);
 }

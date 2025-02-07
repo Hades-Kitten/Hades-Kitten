@@ -49,6 +49,10 @@ const Profile = sequelize.define(
       type: Sequelize.JSON,
       defaultValue: [],
     },
+    notificationsEnabled: {
+      type: Sequelize.BOOLEAN,
+      defaultValue: true,
+    },
   },
   {
     indexes: [

@@ -114,6 +114,24 @@ const commandData = new SlashCommandBuilder()
           .setName("user")
           .setDescription("The user whose profiles to list"),
       ),
+  )
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName("notifications")
+      .setDescription("Enable or disable notifications for a profile")
+      .addStringOption((option) =>
+        option
+          .setName("handle")
+          .setDescription("The handle to modify")
+          .setAutocomplete(true)
+          .setRequired(true),
+      )
+      .addBooleanOption((option) =>
+        option
+          .setName("enabled")
+          .setDescription("Whether notifications should be enabled")
+          .setRequired(true),
+      ),
   );
 
 async function execute(
@@ -281,6 +299,35 @@ async function execute(
         );
 
       await interaction.editReply({ embeds: [embed], components: [actionRow] });
+      break;
+    }
+
+    case "notifications": {
+      const handle = interaction.options.getString("handle", true);
+      const enabled = interaction.options.getBoolean("enabled", true);
+
+      const profile = await Profile.findOne({
+        where: {
+          handle,
+          userId: interaction.user.id,
+          guildId: interaction.guildId,
+        },
+      });
+
+      if (!profile) {
+        await interaction.editReply("Profile not found or you don't own it!");
+        return;
+      }
+
+      await profile.update({ notificationsEnabled: enabled });
+
+      const embed = new EmbedBuilder()
+        .setTitle(
+          `Notifications ${enabled ? "enabled" : "disabled"} for @${handle}'s Profile`,
+        )
+        .setColor(enabled ? "Green" : "Red");
+
+      await interaction.editReply({ embeds: [embed] });
       break;
     }
   }

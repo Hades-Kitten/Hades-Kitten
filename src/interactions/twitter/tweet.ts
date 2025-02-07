@@ -286,13 +286,15 @@ async function modalExecute(
         );
 
         if (!user) return;
-        try {
-          await user.send({
-            content: `@${profile.get("handle")} (${profile.get("displayName")}) replied to your tweet`,
-            embeds: [message.embeds[0], embed],
-          });
-        } catch (error) {
-          console.error("Failed to send DM:", error);
+        if (originalTweetProfile.get("notificationsEnabled")) {
+          try {
+            await user.send({
+              content: `@${profile.get("handle")} (${profile.get("displayName")}) replied to your tweet`,
+              embeds: [message.embeds[0], embed],
+            });
+          } catch (error) {
+            console.error("Failed to send DM:", error);
+          }
         }
       }
 
