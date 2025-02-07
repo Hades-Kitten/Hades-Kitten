@@ -174,6 +174,16 @@ async function modalExecute(
           content: "Tweet not found!",
           flags: ["Ephemeral"],
         });
+
+      const tweetProfile = await Profile.findOne({
+        where: { id: tweet.get("profileId") },
+      });
+      if (!tweetProfile)
+        return await interaction.reply({
+          content: "Profile not found!",
+          flags: ["Ephemeral"],
+        });
+
       const interactionChannel = client.channels.cache.get(
         interaction.channelId,
       ) as BaseGuildTextChannel;
@@ -195,8 +205,7 @@ async function modalExecute(
           iconURL: (profile.get("profilePicture") as string) ?? undefined,
         })
         .setDescription(
-          `
-          ${content}`,
+          `**[Replying to @${tweetProfile.get("handle")}](${message.url})** q${content}`,
         )
         .setTimestamp(tweet.get("timestamp") as Date)
         .setColor("Blue");
@@ -292,7 +301,7 @@ async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
         });
 
       const options = profiles.map((profile) => ({
-        label: `@${profile.get("handle")}`,
+        label: `@${profile.get("handle")} (${profile.get("displayName")})`,
         value: profile.get("handle") as string,
       }));
 
