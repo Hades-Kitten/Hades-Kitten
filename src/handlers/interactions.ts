@@ -9,15 +9,16 @@ import {
 import type { ICommand } from "../types.ts";
 import env from "../env.ts";
 import { crawlDirectory, getHandlerPath } from "./_common.ts";
-import logMessage from "../utils/logging.ts";
+import { Logger } from "../utils/logging.ts";
 
+const logger = new Logger("interactions");
 export const commands = new Collection<string, ICommand>();
 
 async function getCommands(): Promise<ICommand[]> {
   const processFile = async (fileUrl: string) => {
     const { default: interaction } = await import(fileUrl);
     if (!interaction.data) {
-      logMessage(`commands: ${fileUrl} missing data`, 'ERROR');
+      logger.info(`${fileUrl} does not have a data property, skipping`);
       return;
     }
     commands.set(interaction.data.name, interaction);
@@ -34,28 +35,27 @@ async function registerInteractions(
   client: Client,
   interactions: ApplicationCommandData[],
 ) {
-  if (!client.user || !client.application) {
-    console.error("Client user or application not found");
-    return;
-  }
+  logger.info("Registering interactions...");
+  if (!client.user) return logger.error("Client user is not available");
+  if (!client.application)
+    return logger.error("Client application is not available");
 
   const rest = new REST({ version: "9" }).setToken(env.data.TOKEN);
 
   try {
-    logMessage(`commands: registering ${interactions.length} commands`, 'INFO');
+    logger.info("Registering commands...");
     await rest.put(Routes.applicationCommands(<Snowflake>client.user.id), {
       body: interactions,
     });
-    logMessage(`commands: registered ${interactions.length} commands`, 'INFO');
+    logger.info(`Registered ${interactions.length} commands`);
   } catch (error) {
-    logMessage("commands: failed to register commands", 'ERROR');
-    console.error(error);
+    logger.error("Failed to register commands", error);
   }
 }
 
 async function registerCommands(client: Client) {
   const commands = await getCommands();
-  logMessage(`commands: found ${commands.length} commands, registering...`, 'INFO');
+  logger.log(`Found ${commands.length} commands.`);
 
   const interactions = commands.map((command) => command.data);
   await registerInteractions(client, interactions);
