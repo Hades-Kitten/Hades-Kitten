@@ -50,6 +50,18 @@ const commandData = new SlashCommandBuilder()
   )
   .addSubcommand((subcommand) =>
     subcommand
+      .setName("date")
+      .setDescription("Sets the channel for quarterly updates")
+      .addChannelOption((option) =>
+        option
+          .setName("channel")
+          .setDescription("The channel for updates")
+          .setRequired(true)
+          .addChannelTypes(ChannelType.GuildVoice),
+      ),
+  )
+  .addSubcommand((subcommand) =>
+    subcommand
       .setName("tweets")
       .setDescription("Sets the channel where Tweets will be posted")
       .addChannelOption((option) =>
@@ -102,6 +114,16 @@ async function execute(
       .setTitle("Dispatch channel set!")
       .setDescription(
         `This server is now tracking new dispatches in channel: ${channel.name}`,
+      );
+    await interaction.editReply({ embeds: [embed] });
+  }
+  if (type === "date") {
+    await data.update({ dateChannelId: channel.id });
+    const embed = new EmbedBuilder()
+      .setColor("Green")
+      .setTitle("Date channel set!")
+      .setDescription(
+        `This server is now tracking date updates in channel: ${channel.name}`,
       );
     await interaction.editReply({ embeds: [embed] });
   }

@@ -1,16 +1,14 @@
 import type { Client, GuildBasedChannel } from "discord.js";
 import cron from "node-cron";
+import Region from "../models/region.ts";
+import type { RegionInstance } from "../types.ts";
 
-import env from "../env.ts";
-
-async function updateChannelName(client: Client) {
-  // TODO: don't use env variables for the channel id.
-  //       when we implement a database, the guild schema should have a
-  //       field for the quarterly update channel
-  const channelID = env.data.DATE_CHANNEL_ID;
+async function updateChannelName(client: Client, region: RegionInstance) {
+  const channelID = region.dateChannelId;
   const channel = client.channels.cache.get(channelID) as GuildBasedChannel;
+
   if (!channel) {
-    console.error("Channel not found");
+    console.error(`Channel not found for region ${region.regionName}`);
     return;
   }
 
@@ -37,8 +35,6 @@ async function updateChannelName(client: Client) {
       newYear++;
     }
 
-    console.log(`New year: ${newYear}, quarter: ${newQuarter}`);
-
     const newChannelName = `${newYear} Q${newQuarter}`;
     await channel.setName(newChannelName, "Quarterly update");
   } catch (error) {
@@ -46,11 +42,12 @@ async function updateChannelName(client: Client) {
   }
 }
 
-export function scheduleChannelNameUpdate(client: Client) {
+export async function scheduleChannelNameUpdate(client: Client) {
   cron.schedule(
     "0 4 * * *",
-    () => {
-      updateChannelName(client);
+    async () => {
+      const allRegions = (await Region.findAll()) as RegionInstance[];
+      for (const region of allRegions) await updateChannelName(client, region);
     },
     {
       scheduled: true,

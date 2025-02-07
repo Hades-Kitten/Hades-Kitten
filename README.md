@@ -25,7 +25,6 @@ Create a file called `.env` in the root of the project, and add the following li
 ```env
 TOKEN=""
 CLIENT_ID=""
-DATE_CHANNEL_ID=""
 USER_AGENT=""
 ```
 

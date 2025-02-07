@@ -26,6 +26,10 @@ const Region = db.define("region", {
     type: Sequelize.STRING,
     allowNull: true,
   },
+  dateChannelId: {
+    type: Sequelize.STRING,
+    allowNull: true,
+  },
 });
 
 export default Region;

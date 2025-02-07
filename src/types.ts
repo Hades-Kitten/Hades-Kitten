@@ -7,6 +7,8 @@ import type {
   ModalSubmitInteraction,
 } from "discord.js";
 
+import type { Model } from "sequelize";
+
 export interface IEvent {
   event: string;
   execute: (client: Client, ...args: unknown[]) => Promise<void>;
@@ -195,4 +197,15 @@ export interface Post {
   profileId: string;
   content: string;
   timestamp: string;
+}
+
+export interface RegionInstance extends Model<RegionModel>, RegionModel {}
+export interface RegionModel {
+  guildId: string;
+  regionName: string;
+  rmbChannelId: string;
+  activityChannelId: string;
+  dispatchChannelId: string;
+  tweetChannelId: string;
+  dateChannelId: string;
 }
