@@ -27,7 +27,12 @@ export default {
     } else if (interaction.isButton()) {
       const [commandName, ..._args] = interaction.customId.split(":");
       const command = commands.get(commandName);
-      if (!command || !command.buttonExecute) return;
+      if (!command || !command.buttonExecute) {
+        return interaction.reply({
+          content: "Couldn't find the associated command!",
+          flags: ["Ephemeral"],
+        });
+      }
       try {
         await command.buttonExecute(client, interaction);
       } catch (error) {
@@ -57,6 +62,22 @@ export default {
         await command.autocomplete(interaction);
       } catch (error) {
         console.error(error);
+      }
+    } else if (interaction.isStringSelectMenu()) {
+      const command = commands.get(interaction.customId.split(":")[0]);
+      if (!command || !command.selectMenuExecute)
+        return interaction.reply({
+          content: "Couldn't find the associated command!",
+          flags: ["Ephemeral"],
+        });
+      try {
+        await command.selectMenuExecute(client, interaction);
+      } catch (error) {
+        console.error(error);
+        await interaction.reply({
+          content: "There was an error while executing this select menu!",
+          flags: ["Ephemeral"],
+        });
       }
     }
   },
