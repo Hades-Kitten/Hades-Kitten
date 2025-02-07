@@ -18,7 +18,7 @@ async function execute(
         "Fun fact: Khls is a dog", 
         "Fun fact: Khls lives somewhere in the UK and has evaded taxes", 
         "Fun fact: Khls last shower was on August 6th 1954 according to Historical Archives",
-        "Fun fact: Khls is not just a \"guy guy\" HE IS A BRITISH GUY :flag_gb :flag_gb:",
+        "Fun fact: Khls is not just a \"guy guy\" HE IS A BRITISH GUY :flag_gb: :flag_gb:",
         "Fun fact: Khls is the reason why Liberals exist" 
     ]
     await interaction.reply(`${funfacts[Math.floor(Math.random() * funfacts.length)]}\n https://stinkernumber.one/`)
