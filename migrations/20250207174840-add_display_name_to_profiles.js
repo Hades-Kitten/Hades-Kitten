@@ -3,7 +3,7 @@ export default {
     await queryInterface.addColumn("profiles", "displayName", {
       type: Sequelize.STRING,
       allowNull: false,
-      defaultValue: "Unnamed",
+      defaultValue: Sequelize.col("handle"),
     });
   },
 
