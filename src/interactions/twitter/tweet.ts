@@ -11,11 +11,11 @@ import {
   ChannelType,
 } from "discord.js";
 
-import Profile from "../models/profile";
-import Tweet from "../models/tweet";
-import Region from "../models/region";
+import Profile from "../../models/profile";
+import Tweet from "../../models/tweet";
+import Region from "../../models/region";
 
-import autocomplete from "../utils/handleAutocomplete";
+import autocomplete from "../../utils/handleAutocomplete";
 
 const commandData = new SlashCommandBuilder()
   .setName("post")

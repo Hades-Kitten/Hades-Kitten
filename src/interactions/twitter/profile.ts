@@ -5,8 +5,8 @@ import {
   EmbedBuilder,
 } from "discord.js";
 
-import autocomplete from "../utils/handleAutocomplete";
-import Profile from "../models/profile";
+import autocomplete from "../../utils/handleAutocomplete";
+import Profile from "../../models/profile";
 
 const commandData = new SlashCommandBuilder()
   .setName("profile")
