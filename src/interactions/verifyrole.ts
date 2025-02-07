@@ -39,7 +39,7 @@ async function execute(
     const role = interaction.options.getRole("role")
     const data = await verify_role.findOne({ where: { guildId: interaction.guild?.id, roleId: role?.id }})
 
-    if(!data || role?.id !== data.roleId) {
+    if(!data || role?.id !== (data as any).roleId) {
         await verify_role.create({ guildId: interaction.guild?.id, roleId: role?.id })
 
         return await interaction.reply({ embeds: [
@@ -49,8 +49,8 @@ async function execute(
                 .setColor("Green")
         ]})
     } 
-    if(data && role?.id === data.roleId) {
-        await verify_role.destroy({ guildId: interaction.guild?.id })
+    if(data && role?.id === (data as any).roleId) {
+        await verify_role.destroy({ where: { guildId: interaction.guild?.id }})
 
         return await interaction.reply({ embeds: [
             new EmbedBuilder()

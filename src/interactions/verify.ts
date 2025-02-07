@@ -12,6 +12,7 @@ import {
   TextInputStyle,
   type ModalSubmitInteraction,
   InteractionContextType,
+  GuildMemberRoleManager,
 } from "discord.js";
 
 import xmlToJson from "../utils/xmlToJson";
@@ -129,8 +130,10 @@ async function modalExecute(
           .setDescription(`Welcome ${nationName}, enjoy your stay!`);
         await interaction.editReply({ embeds: [embed] });
       } else {
-        const role = interaction.guild?.roles.cache.get(verifyrole?.roleId);
-        await interaction.member?.roles.add(role?.id)
+        const role = interaction.guild?.roles.cache.get((verifyrole as any).roleId);
+        if (interaction.member && interaction.member.roles instanceof GuildMemberRoleManager) await interaction.member.roles.add(role?.id as any);
+        else return;
+
         const embed = new EmbedBuilder()
           .setColor("Green")
           .setTitle("Succesfully verified!")
