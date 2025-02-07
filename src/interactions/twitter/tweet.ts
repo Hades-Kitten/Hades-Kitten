@@ -254,6 +254,11 @@ async function modalExecute(
 
       const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
+          .setCustomId(`post:${replyModel.get("id")}:like`)
+          .setLabel("0")
+          .setEmoji("❤️")
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
           .setCustomId(`post:${replyModel.get("id")}:reply`)
           .setLabel("Reply")
           .setStyle(ButtonStyle.Primary),
@@ -269,10 +274,7 @@ async function modalExecute(
       });
 
       await replyModel.update({ messageId: replyMessage.id });
-      await interaction.reply({
-        content: `Replied! Find it here ${replyMessage.url}`,
-        flags: ["Ephemeral"],
-      });
+      await interaction.deferUpdate();
 
       const originalTweetProfile = await Profile.findOne({
         where: { id: tweet.get("profileId") },
@@ -455,25 +457,14 @@ async function selectMenuExecute(
     const likes = tweet.get("likes") as string[];
     const profileId = profile.get("id") as string;
 
-    if (likes.includes(profileId)) {
+    if (likes.includes(profileId))
       tweet.set(
         "likes",
         likes.filter((id) => id !== profileId),
       );
+    else tweet.set("likes", [...likes, profileId]);
 
-      await interaction.reply({
-        content: `Unliked from @${handle}`,
-        flags: ["Ephemeral"],
-      });
-    } else {
-      tweet.set("likes", [...likes, profileId]);
-
-      await interaction.reply({
-        content: `Liked from @${handle}!`,
-        flags: ["Ephemeral"],
-      });
-    }
-
+    await interaction.deferUpdate();
     await tweet.save();
   }
 
