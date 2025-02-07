@@ -1,5 +1,8 @@
-export default {
-  up: async (queryInterface, Sequelize) => {
+"use strict";
+
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+  async up(queryInterface, Sequelize) {
     await queryInterface.addColumn("profiles", "displayName", {
       type: Sequelize.STRING,
       allowNull: false,
@@ -7,7 +10,7 @@ export default {
     });
   },
 
-  down: async (queryInterface, Sequelize) => {
+  async down(queryInterface, Sequelize) {
     await queryInterface.removeColumn("profiles", "displayName");
   },
 };

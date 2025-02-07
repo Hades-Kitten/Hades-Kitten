@@ -4,7 +4,7 @@ import Region from "./models/region";
 import Profile from "./models/profile";
 import Tweet from "./models/tweet";
 
-import runMigrations from "./db/migrations";
+import runMigrations from "./db/_migrations";
 import sequealize from "./utils/database";
 import { Logger } from "./utils/logging";
 
