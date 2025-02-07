@@ -274,6 +274,26 @@ async function modalExecute(
         flags: ["Ephemeral"],
       });
 
+      const originalTweetProfile = await Profile.findOne({
+        where: { id: tweet.get("profileId") },
+      });
+
+      if (originalTweetProfile) {
+        const user = await client.users.fetch(
+          originalTweetProfile.get("userId") as string,
+        );
+
+        if (!user) return;
+        try {
+          await user.send({
+            content: `@${profile.get("handle")} (${profile.get("displayName")}) replied to your tweet`,
+            embeds: [message.embeds[0], embed],
+          });
+        } catch (error) {
+          console.error("Failed to send DM:", error);
+        }
+      }
+
       break;
     }
     default:
