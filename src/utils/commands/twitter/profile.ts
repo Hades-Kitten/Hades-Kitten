@@ -9,7 +9,7 @@ async function getProfileEmbed(handle: string) {
   const following = (profile.get("following") as string[]).length;
 
   const embed = new EmbedBuilder()
-    .setTitle(`@${handle}'s Profile`)
+    .setTitle(`${profile.get("displayName")}'s Profile (@${handle})`)
     .setDescription((profile.get("bio") as string) ?? "No bio set")
     .addFields(
       {

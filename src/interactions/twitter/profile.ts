@@ -19,7 +19,15 @@ const commandData = new SlashCommandBuilder()
       .addStringOption((option) =>
         option
           .setName("handle")
-          .setDescription("Your unique handle")
+          .setDescription(
+            "Your unique handle (alphanumeric and underscores only)",
+          )
+          .setRequired(true),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("display_name")
+          .setDescription("Your display name")
           .setRequired(true),
       )
       .addStringOption((option) =>
@@ -61,6 +69,9 @@ const commandData = new SlashCommandBuilder()
           .setDescription("The handle to edit")
           .setAutocomplete(true)
           .setRequired(true),
+      )
+      .addStringOption((option) =>
+        option.setName("display_name").setDescription("Your new display name"),
       )
       .addStringOption((option) =>
         option.setName("bio").setDescription("Your new bio"),
@@ -112,6 +123,7 @@ async function execute(
   switch (subcommand) {
     case "create": {
       const handle = interaction.options.getString("handle", true);
+      const displayName = interaction.options.getString("display_name", true);
       const bio = interaction.options.getString("bio");
       const profilePicture = interaction.options.getString("profile_picture");
       const bannerPicture = interaction.options.getString("banner_picture");
@@ -130,15 +142,29 @@ async function execute(
         return;
       }
 
-      await Profile.create({
-        userId: interaction.user.id,
-        guildId: interaction.guildId,
-        handle,
-        bio,
-        profilePicture,
-        bannerPicture,
-        location,
-      });
+      try {
+        await Profile.create({
+          userId: interaction.user.id,
+          guildId: interaction.guildId,
+          handle,
+          displayName,
+          bio,
+          profilePicture,
+          bannerPicture,
+          location,
+        });
+      } catch (error) {
+        if (error.name === "SequelizeValidationError") {
+          const embed = new EmbedBuilder()
+            .setTitle("Invalid Profile")
+            .setDescription(
+              "Your handle must be alphanumeric, contain only underscores, and be between 3 and 32 characters in length.",
+            );
+          return await interaction.editReply({ embeds: [embed] });
+        }
+        console.error("Error creating profile:", error);
+        return await interaction.editReply("An unexpected error occurred.");
+      }
 
       const embed = new EmbedBuilder()
         .setTitle(`Created @${handle}'s Profile`)
@@ -176,6 +202,7 @@ async function execute(
 
     case "edit": {
       const handle = interaction.options.getString("handle", true);
+      const displayName = interaction.options.getString("display_name");
       const bio = interaction.options.getString("bio");
       const profilePicture = interaction.options.getString("profile_picture");
       const bannerPicture = interaction.options.getString("banner_picture");
@@ -195,6 +222,7 @@ async function execute(
       }
 
       await profile.update({
+        displayName: displayName ?? profile.get("displayName"),
         bio: bio ?? profile.get("bio"),
         profilePicture: profilePicture ?? profile.get("profilePicture"),
         bannerPicture: bannerPicture ?? profile.get("bannerPicture"),

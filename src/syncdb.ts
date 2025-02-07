@@ -4,7 +4,11 @@ import Region from "./models/region";
 import Profile from "./models/profile";
 import Tweet from "./models/tweet";
 
+import runMigrations from "./db/migrations";
 import sequealize from "./utils/database";
+import { Logger } from "./utils/logging";
+
+const logger = new Logger("syncdb");
 
 async function syncDatabase() {
   await sequealize.sync();
@@ -13,12 +17,14 @@ async function syncDatabase() {
   await Region.sync();
   await Profile.sync();
   await Tweet.sync();
+
+  await runMigrations(logger);
 }
 
 syncDatabase()
   .then(() => {
-    console.log("Database synced!");
+    logger.info("Database synced!");
   })
   .catch((err) => {
-    console.error("Error syncing database:", err);
+    logger.error("Error syncing database:", err);
   });
