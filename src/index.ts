@@ -1,10 +1,8 @@
-console.clear();
-
 import { Client, Events, GatewayIntentBits } from "discord.js";
 
 import env from "./env.ts";
 import { scheduleChannelNameUpdate } from "./utils/scheduledTasks.ts";
-import logMessage from "./utils/logging.ts";
+import logger from "./utils/logging.ts";
 
 import registerEvents from "./handlers/events.ts";
 import registerInteractions from "./handlers/interactions.ts";
@@ -17,13 +15,20 @@ const client = new Client({
 });
 
 client.on(Events.ClientReady, async (client) => {
-  logMessage(
-    `Logged in as ${client.user.username} (${client.user.id})`,
-    "INFO",
-  );
+  logger.info(`Logged in as ${client.user?.tag}!`);
   await Promise.all([registerEvents(client), registerInteractions(client)]);
+  logger.info("Events and interactions registered!");
+
   scheduleChannelNameUpdate(client);
   sseEvents.execute(client);
 });
 
 await client.login(env.data.TOKEN);
+
+process.on("unhandledRejection", (error) => {
+  logger.error("Unhandled promise rejection:", error);
+});
+
+process.on("uncaughtException", (error) => {
+  logger.error("Uncaught exception:", error);
+});

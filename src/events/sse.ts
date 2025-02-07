@@ -5,16 +5,14 @@ import {
   EmbedBuilder,
 } from "discord.js";
 import { EventSource } from "eventsource";
+import type { RMB } from "../types";
 
+import type { Nation as INation, Region as IRegion, SSEEvent } from "../types";
+import Region from "../models/region";
 import xmlToJson from "../utils/xmlToJson";
 
-import Region from "../models/region";
-import type {
-  RMB,
-  Nation as INation,
-  Region as IRegion,
-  SSEEvent,
-} from "../types";
+import { logger as eventLogger } from "../handlers/events";
+const logger = eventLogger.child("sse");
 
 interface NameCache {
   [key: string]: string | undefined;
@@ -38,14 +36,14 @@ async function getBeautifiedName(
 
   const response = await fetch(url);
   if (!response.ok) {
-    console.error(`Failed to fetch data for ${name}`);
+    logger.error(`Failed to fetch data for ${name}, falling back to raw name`);
     return name;
   }
 
   const text = await response.text();
   const json = await xmlToJson<{ NATION: INation } | { REGION: IRegion }>(text);
   if (!json) {
-    console.error(`Failed to parse data for ${name}`);
+    logger.error(`Failed to parse JSON for ${name}, falling back to raw name`);
     return name;
   }
 
@@ -54,15 +52,13 @@ async function getBeautifiedName(
   return beautifiedName;
 }
 
-async function getRegionalMessageBoard(
-  region: string,
-): Promise<RMB | undefined> {
+async function getRegionalMessageBoard(region: string): Promise<RMB | null> {
   const url = `https://www.nationstates.net/cgi-bin/api.cgi?region=${region}&q=messages`;
   const response = await fetch(url);
 
   if (!response.ok) {
-    console.error(`Failed to fetch RMB data: ${region}`);
-    return undefined;
+    logger.error(`Failed to fetch RMB data for ${region}`);
+    return null;
   }
 
   const text = await response.text();
@@ -78,7 +74,7 @@ async function getDispatchPreview(
     const response = await fetch(dispatchUrl);
 
     if (!response.ok) {
-      console.error(`Failed to fetch dispatch data: ${nation} ${dispatchId}`);
+      logger.error(`Failed to fetch dispatch list for ${nation}/${dispatchId}`);
       return undefined;
     }
 
@@ -97,8 +93,8 @@ async function getDispatchPreview(
 
     return undefined;
   } catch (error) {
-    console.error(
-      `Error fetching dispatch preview ${nation} ${dispatchId}`,
+    logger.error(
+      `Error fetching dispatch preview ${nation}/${dispatchId}`,
       error,
     );
     return undefined;
@@ -153,16 +149,18 @@ async function parseMessage(message: string): Promise<string> {
 }
 
 async function handleSSE(client: Client) {
-  console.log("Subscribing to SSE events");
+  logger.info("Subscribing to all regions");
   const allRegions = await Region.findAll();
 
   for (const region of allRegions) {
     if (!region.dataValues.regionName) {
-      console.error("Region name not found");
+      logger.error(
+        `Region ${region.dataValues.id} has no region name, skipping`,
+      );
       continue;
     }
 
-    console.log(`\tSubscribing to region: ${region.dataValues.regionName}`);
+    logger.info(`Subscribing to region ${region.dataValues.regionName}`);
     const buckets = [
       `region:${region.dataValues.regionName}`,
       "dispatch",
@@ -175,7 +173,9 @@ async function handleSSE(client: Client) {
     const url = `https://www.nationstates.net/api/${buckets.join("+")}`;
     const eventSource = new EventSource(url);
 
-    console.log(`\tSubscribed to buckets: ${buckets.join(", ")}`);
+    logger.info(
+      `Subscribed to ${region.dataValues.regionName} / ${buckets.join(", ")}`,
+    );
 
     eventSource.onmessage = async (event) => {
       const data: SSEEvent = JSON.parse(event.data);
