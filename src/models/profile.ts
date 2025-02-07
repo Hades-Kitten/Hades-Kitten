@@ -15,6 +15,15 @@ const Profile = sequelize.define(
     handle: {
       type: Sequelize.STRING,
       allowNull: false,
+      unique: "guild_handle_unique",
+      validate: {
+        is: /^[a-zA-Z0-9_]+$/i,
+        len: [3, 32],
+      },
+    },
+    displayName: {
+      type: Sequelize.STRING,
+      allowNull: false,
     },
     bio: {
       type: Sequelize.STRING(500),
