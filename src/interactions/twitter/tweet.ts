@@ -50,7 +50,7 @@ async function execute(
   });
 
   if (!profile) {
-    interaction.deferReply({ flags: ["Ephemeral"]})
+    interaction.deferReply({ flags: ["Ephemeral"] });
     await interaction.editReply({
       content: "Profile not found or you don't own it!",
     });
@@ -88,7 +88,10 @@ async function modalExecute(
 
       const profile = await Profile.findOne({ where: { handle } });
       if (!profile) {
-        await interaction.reply({ content: "Profile not found!", flags: ["Ephemeral"] });
+        await interaction.reply({
+          content: "Profile not found!",
+          flags: ["Ephemeral"],
+        });
         return;
       }
 
@@ -111,23 +114,29 @@ async function modalExecute(
       });
 
       if (!region)
-        return interaction.reply({ content: ":x: Region not found", flags: ["Ephemeral"] });
+        return interaction.reply({
+          content: ":x: Region not found",
+          flags: ["Ephemeral"],
+        });
 
       if (!region.get("tweetChannelId"))
         return interaction.reply({
           content: ":x: Tweet channel not found, ask an admin to set it up",
-          flags: ["Ephemeral"]
+          flags: ["Ephemeral"],
         });
 
       const channel = client.channels.cache.get(
         region.get("tweetChannelId") as string,
       );
       if (!channel)
-        return interaction.reply({ content: ":x: Channel not found", flags: ["Ephemeral"] });
+        return interaction.reply({
+          content: ":x: Channel not found",
+          flags: ["Ephemeral"],
+        });
       if (channel?.type !== ChannelType.GuildText)
         return interaction.reply({
           content: ":x: Channel is not a text channel",
-          flags: ["Ephemeral"]
+          flags: ["Ephemeral"],
         });
 
       const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -150,7 +159,7 @@ async function modalExecute(
 
       await interaction.reply({
         content: `Posted! Find it here ${message.url}`,
-        flags: ["Ephemeral"]
+        flags: ["Ephemeral"],
       });
       break;
     }
@@ -160,7 +169,11 @@ async function modalExecute(
       const content = interaction.fields.getTextInputValue("replyContent");
 
       const tweet = await Tweet.findOne({ where: { id: tweetId } });
-      if (!tweet) return await interaction.reply({ content: "Tweet not found!", flags: ["Ephemeral"] });
+      if (!tweet)
+        return await interaction.reply({
+          content: "Tweet not found!",
+          flags: ["Ephemeral"],
+        });
       const interactionChannel = client.channels.cache.get(
         interaction.channelId,
       ) as BaseGuildTextChannel;
@@ -170,7 +183,11 @@ async function modalExecute(
       );
 
       const profile = await Profile.findOne({ where: { handle } });
-      if (!profile) return await interaction.reply({ content: "Profile not found!", flags: ["Ephemeral"] });
+      if (!profile)
+        return await interaction.reply({
+          content: "Profile not found!",
+          flags: ["Ephemeral"],
+        });
 
       const embed = new EmbedBuilder()
         .setAuthor({
@@ -188,12 +205,15 @@ async function modalExecute(
         where: { guildId: interaction.guildId },
       });
       if (!region)
-        return interaction.reply({ content: ":x: Region not found", flags: ["Ephemeral"] });
+        return interaction.reply({
+          content: ":x: Region not found",
+          flags: ["Ephemeral"],
+        });
 
       if (!region.get("tweetChannelId"))
         return interaction.reply({
           content: ":x: Tweet channel not found, ask an admin to set it up",
-          flags: ["Ephemeral"]
+          flags: ["Ephemeral"],
         });
 
       const channel = client.channels.cache.get(
@@ -201,30 +221,33 @@ async function modalExecute(
       );
 
       if (!channel)
-        return interaction.reply({ content: ":x: Channel not found", flags: ["Ephemeral"] });
+        return interaction.reply({
+          content: ":x: Channel not found",
+          flags: ["Ephemeral"],
+        });
 
       if (channel?.type !== ChannelType.GuildText)
         return interaction.reply({
           content: ":x: Channel is not a text channel",
-          flags: ["Ephemeral"]
+          flags: ["Ephemeral"],
         });
-
-      const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`post:${tweet.get("id")}:reply`)
-          .setLabel("Reply")
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId(`post:${tweet.get("id")}:viewProfile:${handle}`)
-          .setLabel("View Profile")
-          .setStyle(ButtonStyle.Secondary),
-      );
 
       const replyModel = await Tweet.create({
         profileId: profile.get("id"),
         content,
         replyToTweetId: tweet.get("id"),
       });
+
+      const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`post:${replyModel.get("id")}:reply`)
+          .setLabel("Reply")
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId(`post:${replyModel.get("id")}:viewProfile:${handle}`)
+          .setLabel("View Profile")
+          .setStyle(ButtonStyle.Secondary),
+      );
 
       const replyMessage = await message.reply({
         embeds: [embed],
@@ -234,7 +257,7 @@ async function modalExecute(
       await replyModel.update({ messageId: replyMessage.id });
       await interaction.reply({
         content: `Replied! Find it here ${replyMessage.url}`,
-        flags: ["Ephemeral"]
+        flags: ["Ephemeral"],
       });
 
       break;
@@ -249,7 +272,10 @@ async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
   const tweet = await Tweet.findOne({ where: { id: tweetId } });
 
   if (!tweet) {
-    await interaction.reply({ content: "Tweet not found!", flags: ["Ephemeral"]});
+    await interaction.reply({
+      content: "Tweet not found!",
+      flags: ["Ephemeral"],
+    });
     return;
   }
 
@@ -260,7 +286,10 @@ async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
       });
 
       if (profiles.length === 0)
-        return await interaction.reply({ content: "Create a profile first.", flags: ["Ephemeral"]});
+        return await interaction.reply({
+          content: "Create a profile first.",
+          flags: ["Ephemeral"],
+        });
 
       const options = profiles.map((profile) => ({
         label: `@${profile.get("handle")}`,
@@ -300,7 +329,10 @@ async function selectMenuExecute(
   const tweet = await Tweet.findOne({ where: { id: tweetId } });
 
   if (!tweet) {
-    await interaction.reply({ content: "Tweet not found!", flags: ["Ephemeral"]});
+    await interaction.reply({
+      content: "Tweet not found!",
+      flags: ["Ephemeral"],
+    });
     return;
   }
 
@@ -308,7 +340,10 @@ async function selectMenuExecute(
   const profile = await Profile.findOne({ where: { handle } });
 
   if (!profile) {
-    await interaction.reply({ content: "Profile not found!", flags: ["Ephemeral"] });
+    await interaction.reply({
+      content: "Profile not found!",
+      flags: ["Ephemeral"],
+    });
     return;
   }
 
