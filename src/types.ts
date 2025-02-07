@@ -106,7 +106,7 @@ interface Scale {
   $: {
     id: string;
   };
-  SCORE: string;
+  SCORE: number;
   RANK: string;
   RRANK: string;
 }
