@@ -3,21 +3,10 @@ import {
     SlashCommandBuilder,
     EmbedBuilder,
     type Client,
-    type ButtonInteraction,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    ModalBuilder,
-    TextInputBuilder,
-    TextInputStyle,
-    type ModalSubmitInteraction,
     PermissionFlagsBits,
     InteractionContextType,
 } from "discord.js";
 
-import xmlToJson from "../utils/xmlToJson";
-import Verify from "../models/verify";
-import type { VerifyData } from "../types";
 import verify_role from "../models/verifyRole";
 
 const commandData = new SlashCommandBuilder()
