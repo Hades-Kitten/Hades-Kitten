@@ -6,7 +6,7 @@
     "start": "bun run src/index.ts",
     "dev": "bun --watch src/index.ts",
     "db:sync": "bun run src/syncdb.ts",
-    "db:migrate": "sequelize db:migrate",
+    "db:migrate": "sequelize db:migrate"
   },
   "keywords": [],
   "author": "",
