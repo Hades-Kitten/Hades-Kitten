@@ -18,6 +18,10 @@ const Tweet = sequelize.define("tweet", {
     type: Sequelize.STRING,
     allowNull: true,
   },
+  likes: {
+    type: Sequelize.JSON,
+    defaultValue: [],
+  },
   replyToTweetId: {
     type: Sequelize.INTEGER,
     allowNull: true,
