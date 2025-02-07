@@ -5,8 +5,9 @@ import {
   EmbedBuilder,
 } from "discord.js";
 
-import autocomplete from "../../utils/handleAutocomplete";
+import { getProfileEmbed } from "../../utils/commands/twitter/profile";
 import Profile from "../../models/profile";
+import autocomplete from "../../utils/handleAutocomplete";
 
 const commandData = new SlashCommandBuilder()
   .setName("profile")
@@ -210,36 +211,8 @@ async function execute(
 
     case "view": {
       const handle = interaction.options.getString("handle", true);
-
-      const profile = await Profile.findOne({ where: { handle } });
-      if (!profile) {
-        await interaction.editReply("Profile not found!");
-        return;
-      }
-
-      const followers = (profile.get("followers") as string[]).length;
-      const following = (profile.get("following") as string[]).length;
-
-      const embed = new EmbedBuilder()
-        .setTitle(`@${handle}'s Profile`)
-        .setDescription((profile.get("bio") as string) ?? "No bio set")
-        .addFields(
-          {
-            name: "Location",
-            value: (profile.get("location") as string) ?? "Not set",
-            inline: true,
-          },
-          { name: "Followers", value: followers.toString(), inline: true },
-          { name: "Following", value: following.toString(), inline: true },
-        )
-        .setColor("Blue");
-
-      if (profile.get("profilePicture")) {
-        embed.setThumbnail(profile.get("profilePicture") as string);
-      }
-      if (profile.get("bannerPicture")) {
-        embed.setImage(profile.get("bannerPicture") as string);
-      }
+      const embed = await getProfileEmbed(handle);
+      if (!embed) return await interaction.editReply("Profile not found!");
 
       await interaction.editReply({ embeds: [embed] });
       break;
