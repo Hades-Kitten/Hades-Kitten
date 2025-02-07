@@ -7,12 +7,12 @@ import Tweet from "./models/tweet";
 import sequealize from "./utils/database";
 
 async function syncDatabase() {
-  await sequealize.sync({ force: true });
-  await Verify.sync({ force: true });
-  await VerifyRole.sync({ force: true });
-  await Region.sync({ force: true });
-  await Profile.sync({ force: true });
-  await Tweet.sync({ force: true });
+  await sequealize.sync();
+  await Verify.sync();
+  await VerifyRole.sync();
+  await Region.sync();
+  await Profile.sync();
+  await Tweet.sync();
 }
 
 syncDatabase()
