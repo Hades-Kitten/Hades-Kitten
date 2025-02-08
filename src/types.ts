@@ -136,7 +136,7 @@ export interface Region {
   UNNATIONS: string;
   EMBASSIES: {
     EMBASSY: string;
-  }
+  };
   DELEGATE: string;
   OFFICERS: {
     OFFICER: Officer[];
@@ -201,6 +201,7 @@ export interface Profile {
   following: string[];
 }
 
+export interface PostInstance extends Model<Post>, Post {}
 export interface Post {
   profileId: string;
   content: string;

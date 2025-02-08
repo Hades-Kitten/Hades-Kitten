@@ -21,6 +21,8 @@ import Profile from "../../models/profile";
 import Tweet from "../../models/tweet";
 import Region from "../../models/region";
 
+import newPost from "../../utils/commands/twitter/tweet";
+
 import autocomplete from "../../utils/handleAutocomplete";
 import { getProfileEmbed } from "../../utils/commands/twitter/profile";
 
@@ -85,87 +87,11 @@ async function modalExecute(
   switch (rest[0]) {
     case "modal": {
       const content = interaction.fields.getTextInputValue("tweetContent");
-
-      const profile = await Profile.findOne({ where: { handle } });
-      if (!profile) {
-        await interaction.reply({
-          content: "Profile not found!",
-          flags: ["Ephemeral"],
-        });
-        return;
-      }
-
-      const tweet = await Tweet.create({
-        profileId: profile.get("id"),
+      await newPost(interaction, {
+        handle,
         content,
       });
 
-      const embed = new EmbedBuilder()
-        .setAuthor({
-          name: `@${handle}`,
-          iconURL: (profile.get("profilePicture") as string) ?? undefined,
-        })
-        .setDescription(content)
-        .setTimestamp(tweet.get("timestamp") as Date)
-        .setColor("Blue");
-
-      const region = await Region.findOne({
-        where: { guildId: interaction.guildId },
-      });
-
-      if (!region)
-        return interaction.reply({
-          content: ":x: Region not found",
-          flags: ["Ephemeral"],
-        });
-
-      if (!region.get("tweetChannelId"))
-        return interaction.reply({
-          content: ":x: Tweet channel not found, ask an admin to set it up",
-          flags: ["Ephemeral"],
-        });
-
-      const channel = client.channels.cache.get(
-        region.get("tweetChannelId") as string,
-      );
-      if (!channel)
-        return interaction.reply({
-          content: ":x: Channel not found",
-          flags: ["Ephemeral"],
-        });
-      if (channel?.type !== ChannelType.GuildText)
-        return interaction.reply({
-          content: ":x: Channel is not a text channel",
-          flags: ["Ephemeral"],
-        });
-
-      const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`post:${tweet.get("id")}:like`)
-          .setLabel("0")
-          .setEmoji("❤️")
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId(`post:${tweet.get("id")}:reply`)
-          .setLabel("Reply")
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId(`post:${tweet.get("id")}:viewProfile:${handle}`)
-          .setLabel("View Profile")
-          .setStyle(ButtonStyle.Secondary),
-      );
-
-      const message = await channel.send({
-        embeds: [embed],
-        components: [buttonRow],
-      });
-
-      await tweet.update({ messageId: message.id });
-
-      await interaction.reply({
-        content: `Posted! Find it here ${message.url}`,
-        flags: ["Ephemeral"],
-      });
       break;
     }
     case "reply": {
@@ -180,123 +106,11 @@ async function modalExecute(
           flags: ["Ephemeral"],
         });
 
-      const tweetProfile = await Profile.findOne({
-        where: { id: tweet.get("profileId") },
-      });
-      if (!tweetProfile)
-        return await interaction.reply({
-          content: "Profile not found!",
-          flags: ["Ephemeral"],
-        });
-
-      const interactionChannel = client.channels.cache.get(
-        interaction.channelId,
-      ) as BaseGuildTextChannel;
-
-      const message = await interactionChannel.messages.fetch(
-        tweet.get("messageId") as string,
-      );
-
-      const profile = await Profile.findOne({ where: { handle } });
-      if (!profile)
-        return await interaction.reply({
-          content: "Profile not found!",
-          flags: ["Ephemeral"],
-        });
-
-      const embed = new EmbedBuilder()
-        .setAuthor({
-          name: `@${handle}`,
-          iconURL: (profile.get("profilePicture") as string) ?? undefined,
-        })
-        .setDescription(
-          `**[Replying to @${tweetProfile.get("handle")}](${message.url})** q${content}`,
-        )
-        .setTimestamp(tweet.get("timestamp") as Date)
-        .setColor("Blue");
-
-      const region = await Region.findOne({
-        where: { guildId: interaction.guildId },
-      });
-      if (!region)
-        return interaction.reply({
-          content: ":x: Region not found",
-          flags: ["Ephemeral"],
-        });
-
-      if (!region.get("tweetChannelId"))
-        return interaction.reply({
-          content: ":x: Tweet channel not found, ask an admin to set it up",
-          flags: ["Ephemeral"],
-        });
-
-      const channel = client.channels.cache.get(
-        region.get("tweetChannelId") as string,
-      );
-
-      if (!channel)
-        return interaction.reply({
-          content: ":x: Channel not found",
-          flags: ["Ephemeral"],
-        });
-
-      if (channel?.type !== ChannelType.GuildText)
-        return interaction.reply({
-          content: ":x: Channel is not a text channel",
-          flags: ["Ephemeral"],
-        });
-
-      const replyModel = await Tweet.create({
-        profileId: profile.get("id"),
+      await newPost(interaction, {
+        handle,
         content,
-        replyToTweetId: tweet.get("id"),
+        replyTo: tweet.get("id") as string,
       });
-
-      const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`post:${replyModel.get("id")}:like`)
-          .setLabel("0")
-          .setEmoji("❤️")
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId(`post:${replyModel.get("id")}:reply`)
-          .setLabel("Reply")
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId(`post:${replyModel.get("id")}:viewProfile:${handle}`)
-          .setLabel("View Profile")
-          .setStyle(ButtonStyle.Secondary),
-      );
-
-      const replyMessage = await message.reply({
-        embeds: [embed],
-        components: [buttonRow],
-      });
-
-      await replyModel.update({ messageId: replyMessage.id });
-      await interaction.deferUpdate();
-
-      const originalTweetProfile = await Profile.findOne({
-        where: { id: tweet.get("profileId") },
-      });
-
-      if (originalTweetProfile) {
-        const user = await client.users.fetch(
-          originalTweetProfile.get("userId") as string,
-        );
-
-        if (!user) return;
-        if (originalTweetProfile.get("notificationsEnabled")) {
-          try {
-            await user.send({
-              content: `@${profile.get("handle")} (${profile.get("displayName")}) replied to your tweet`,
-              embeds: [message.embeds[0], embed],
-            });
-          } catch (error) {
-            console.error("Failed to send DM:", error);
-          }
-        }
-      }
 
       break;
     }
