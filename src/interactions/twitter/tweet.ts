@@ -15,6 +15,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
   StringSelectMenuBuilder,
+  Message,
 } from "discord.js";
 
 import Profile from "../../models/profile";
@@ -252,8 +253,11 @@ async function selectMenuExecute(
   } else if (rest[0] === "pickLikeProfile") {
     const handle = interaction.values[0];
     const tweet = await Tweet.findOne({ where: { id: tweetId } });
+    const region = await Region.findOne({
+      where: { guildId: interaction.guildId },
+    });
 
-    if (!tweet) {
+    if (!tweet || !region) {
       await interaction.reply({
         content: "Tweet not found!",
         flags: ["Ephemeral"],
@@ -272,16 +276,45 @@ async function selectMenuExecute(
 
     const likes = tweet.get("likes") as string[];
     const profileId = profile.get("id") as string;
+    let isLiking = false;
 
-    if (likes.includes(profileId))
+    if (likes.includes(profileId)) {
       tweet.set(
         "likes",
         likes.filter((id) => id !== profileId),
       );
-    else tweet.set("likes", [...likes, profileId]);
+    } else {
+      isLiking = true;
+      tweet.set("likes", [...likes, profileId]);
+    }
 
     await interaction.deferUpdate();
     await tweet.save();
+
+    const tweetProfile = await Profile.findOne({
+      where: { id: tweet.get("profileId") },
+    });
+    if (!tweetProfile) return;
+
+    if (tweetProfile.get("likeNotificationsEnabled") && isLiking) {
+      const user = await _client.users.fetch(
+        tweetProfile.get("userId") as string,
+      );
+
+      const messageId = await tweet.get("messageId");
+      if (!messageId) return;
+      const message = (await interaction.channel?.messages.fetch(
+        messageId,
+      )) as unknown as Message;
+      if (!message || !message.embeds.length) return;
+
+      await user.send({
+        content: `**@${profile.get("handle")}** liked your post in **${region.get(
+          "regionName",
+        )}** - ${message.url}`,
+        embeds: [message.embeds[0]],
+      });
+    }
   }
 
   const tweetUpdated = await Tweet.findOne({ where: { id: tweetId } });

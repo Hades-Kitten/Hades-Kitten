@@ -128,9 +128,13 @@ const commandData = new SlashCommandBuilder()
       )
       .addBooleanOption((option) =>
         option
-          .setName("enabled")
-          .setDescription("Whether notifications should be enabled")
-          .setRequired(true),
+          .setName("replies")
+          .setDescription("Enable or disable notifications for replies"),
+      )
+      .addBooleanOption((option) =>
+        option
+          .setName("likes")
+          .setDescription("Enable or disable notifications for likes"),
       ),
   );
 
@@ -304,7 +308,6 @@ async function execute(
 
     case "notifications": {
       const handle = interaction.options.getString("handle", true);
-      const enabled = interaction.options.getBoolean("enabled", true);
 
       const profile = await Profile.findOne({
         where: {
@@ -319,13 +322,21 @@ async function execute(
         return;
       }
 
-      await profile.update({ notificationsEnabled: enabled });
+      const enabledReplies =
+        interaction.options.getBoolean("replies") ??
+        profile.get("notificationsReplies");
+      const enabledLikes =
+        interaction.options.getBoolean("likes") ??
+        profile.get("notificationsLikes");
+
+      await profile.update({
+        notificationsReplies: enabledReplies,
+        notificationsLikes: enabledLikes,
+      });
 
       const embed = new EmbedBuilder()
-        .setTitle(
-          `Notifications ${enabled ? "enabled" : "disabled"} for @${handle}'s Profile`,
-        )
-        .setColor(enabled ? "Green" : "Red");
+        .setTitle(`Updated @${handle}'s Notifications`)
+        .setColor("Blue");
 
       await interaction.editReply({ embeds: [embed] });
       break;

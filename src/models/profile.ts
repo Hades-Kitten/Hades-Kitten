@@ -49,7 +49,16 @@ const Profile = sequelize.define(
       type: Sequelize.JSON,
       defaultValue: [],
     },
+    /** @deprecated - introduced {like, reply}NotificationEnabled for fine-grained control */
     notificationsEnabled: {
+      type: Sequelize.BOOLEAN,
+      defaultValue: true,
+    },
+    likeNotificationsEnabled: {
+      type: Sequelize.BOOLEAN,
+      defaultValue: true,
+    },
+    replyNotificationsEnabled: {
       type: Sequelize.BOOLEAN,
       defaultValue: true,
     },
