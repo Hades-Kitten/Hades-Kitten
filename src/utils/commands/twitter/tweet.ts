@@ -218,6 +218,17 @@ async function newPost(interaction: ModalSubmitInteraction, post: PostInput) {
       embeds: [embed],
     });
   }
+
+  if (replyToProfile && replyToMessage) {
+    if (!replyToProfile.get("notificationsEnabled")) return;
+    const user = await interaction.client.users.fetch(
+      replyToProfile.get("userId") as string,
+    );
+    await user.send({
+      content: `**@${handle}** replied to your post in **${region.get("regionName") as string}** - ${message.url}`,
+      embeds: [replyToMessage.embeds[0], embed],
+    });
+  }
 }
 
 export default newPost;
