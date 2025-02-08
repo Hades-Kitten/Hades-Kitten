@@ -220,7 +220,7 @@ async function newPost(interaction: ModalSubmitInteraction, post: PostInput) {
   }
 
   if (replyToProfile && replyToMessage) {
-    if (!replyToProfile.get("notificationsEnabled")) return;
+    if (!replyToProfile.get("replyNotificationsEnabled")) return;
     const user = await interaction.client.users.fetch(
       replyToProfile.get("userId") as string,
     );
