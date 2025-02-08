@@ -46,8 +46,8 @@ function getAllScoresInArray(type: string, nationDataA: Nation, nationDataB: Nat
 
             const scoreA = Number.parseInt(scaleA.SCORE.toString());
             const scoreB = Number.parseInt(scaleB.SCORE.toString());
-            const formattedAscore = formatter.formatNumber(Number.parseInt(scaleA.SCORE.toString())) as unknown as number;
-            const formattedBscore = formatter.formatNumber(Number.parseInt(scaleB.SCORE.toString())) as unknown as number;
+            const formattedAscore = formatter.formatNumber(scaleA.SCORE) as unknown as number;
+            const formattedBscore = formatter.formatNumber(scaleB.SCORE) as unknown as number;
             let comparisonString: string;
             if (scoreA > scoreB) {
                 comparisonString = " > ";
@@ -183,7 +183,7 @@ async function updatePage(
             .setDisabled(true),
         new ButtonBuilder()
             .setCustomId(
-                `${commandData.name}:nation:navigate:${currentPage + 1}`,
+                `${commandData.name}:${nationName_A}:${nationName_B}:navigate:${currentPage + 1}`,
             )
             .setLabel("Next")
             .setStyle(ButtonStyle.Primary)
@@ -229,16 +229,16 @@ async function execute(
 }
 
 async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
-    interaction.deferReply({ flags: ["Ephemeral"]})
     if (interaction.channel?.type !== ChannelType.GuildText) return;
     const [commandName, nationAName, nationBName, action, pageString] =
         interaction.customId.split(":");
+    console.log([nationAName, nationBName])
      console.log([commandName, nationAName, nationBName, action, pageString])
 
     if (action === "navigate") {
         const page = Number.parseInt(pageString);
         if (Number.isNaN(page)) {
-            return await interaction.followUp({
+            return await interaction.reply({
                 content: "Something went wrong",
                 flags: ["Ephemeral"],
             });
