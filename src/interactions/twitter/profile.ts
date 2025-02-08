@@ -175,7 +175,7 @@ async function execute(
           location,
         });
       } catch (error) {
-        if (error.name === "SequelizeValidationError") {
+        if ((error as any).name === "SequelizeValidationError") {
           const embed = new EmbedBuilder()
             .setTitle("Invalid Profile")
             .setDescription(

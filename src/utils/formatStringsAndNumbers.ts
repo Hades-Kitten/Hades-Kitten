@@ -1,22 +1,24 @@
 /**
+ * Formats nation names like for example: duminan_federal_union -> Duminan Federal Union
+ * @param {string} nationName - The nation name
+ */
+function formatNationName(nationName: string): string {
+    const formattedName = nationName
+        .replace(/_/g, " ")
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+
+    return formattedName;
+}
+
+/**
  * Nation arrays must be in this format in order to work "NATIONA:NATIONB:NATIONC:NATIOND..."
  * @param {string} nationNames - The nations "NATIONA:NATIONB.."
  */
 function formatNationsArray(nationNames: string): string {
     const nationsArray = nationNames.replaceAll(":", ",").split(",");
     const formattedNationsArray: string[] = [];
-
-
-    function formatNationName(nationName: string): string {
-        const formattedName = nationName
-            .replace(/_/g, " ")
-            .split(" ")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ");
-
-        return formattedName;
-    }
-
 
     function formatNationLink(nationName: string): string {
         const formattedName = formatNationName(nationName);
@@ -58,8 +60,7 @@ function formatNumber(num: number): string {
     if (num >= 1000000000) return `${(num / 1000000000).toFixed(1)}B`;
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    if (num >= 10) return `${(num / 10).toFixed(2)}`
-    if (num >= 1) return `${(num / 1).toFixed(2)}`
+    if (num >= 0) return `${(num / 1).toFixed(2)}`
     return num.toString();
 }
 
@@ -72,6 +73,6 @@ function FormatNSFlag(flag: string) {
     else return flag = flag;
 }
 
-const formatter = { formatNationsArray, formatNumber, FormatNSFlag }
+const formatter = { formatNationsArray, formatNumber, FormatNSFlag, formatNationName }
 
 export default formatter;

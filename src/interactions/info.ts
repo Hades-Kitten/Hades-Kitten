@@ -10,7 +10,6 @@ import {
   type ButtonInteraction,
   InteractionContextType,
 } from "discord.js";
-import { fetch } from "bun";
 import xmlToJson from "../utils/xmlToJson";
 import env from "../env.ts";
 import formatter from "../utils/formatStringsAndNumbers.ts";
@@ -66,16 +65,16 @@ async function generateEmbassiesPage(regionData: Region): Promise<EmbedBuilder> 
 }
 
 async function generateRegionalGeneralInformationPage(regionData: Region): Promise<EmbedBuilder> {
-  let wadelegate = regionData.DELEGATE ? `[${regionData.DELEGATE}](https://www.nationstates.com/nation=${regionData.DELEGATE})` : `Power Vaccum`;
+  let wadelegate = regionData.DELEGATE ? `[${formatter.formatNationName(regionData.DELEGATE)}](https://www.nationstates.com/nation=${regionData.DELEGATE})` : `Power Vaccum`;
 
   const officersEmbed = regionData.OFFICERS.OFFICER.map(officer =>
-    `**${officer.OFFICE}**: [${officer.NATION}](https://www.nationstates.net/nation=${officer.NATION}) and, has been in office since <t:${officer.TIME}:R>`
+    `**${officer.OFFICE}**: [${formatter.formatNationName(officer.NATION)}](https://www.nationstates.net/nation=${officer.NATION}) and, has been in office since <t:${officer.TIME}:R>`
   ).join('\n\n');
 
   return new EmbedBuilder()
     .setAuthor(regionAuthor(regionData))
     .setImage(`https://www.nationstates.net${regionData.BANNERURL}`)
-    .setDescription(`**Governor:** [${regionData.GOVERNOR}](https://www.nationstates.net/nation=${regionData.GOVERNOR})\n\n **WA Delegate:** ${wadelegate}\n\n ${officersEmbed}`)
+    .setDescription(`**Governor:** [${formatter.formatNationName(regionData.GOVERNOR)}](https://www.nationstates.net/nation=${regionData.GOVERNOR})\n\n **WA Delegate:** ${wadelegate}\n\n ${officersEmbed}`)
     .addFields(
       { name: "Global Power", value: regionData.POWER, inline: true },
       { name: "Founded on", value: `<t:${regionData.FOUNDEDTIME}>`, inline: true }
