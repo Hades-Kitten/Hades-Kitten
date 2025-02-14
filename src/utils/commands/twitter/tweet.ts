@@ -1,9 +1,9 @@
 import type { Message, ModalSubmitInteraction, User } from "discord.js";
 import {
-  EmbedBuilder,
-  ButtonStyle,
   ActionRowBuilder,
   ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder,
 } from "discord.js";
 import type { Model } from "sequelize";
 
@@ -66,19 +66,24 @@ async function constructEmbed(
 
     if (tweetProfile) replyHandle = tweetProfile.get("handle") as string;
   }
-
+  
+  const verifiedBadge = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Twitter_Verified_Badge.svg/1200px-Twitter_Verified_Badge.svg.png";
+  
   const embed = new EmbedBuilder()
     .setAuthor({
-      name: `@${profile.get("handle")}`,
+      name: `${profile.get("displayName") as string}`,
       iconURL: (profile.get("profilePicture") as string) ?? undefined,
     })
-    .setDescription(
-      replyHandle && replyToMessageUrl
-        ? `**[Replying to @${replyHandle}](${replyToMessageUrl})** ${content}`
-        : content,
-    )
+    .setDescription(replyHandle && replyToMessageUrl
+      ? `**[Replying to @${replyHandle}](${replyToMessageUrl})** ${content}`
+      : content)
     .setTimestamp(post.get("timestamp") as unknown as Date)
     .setColor("Blue");
+  
+  if (profile.get("verified"))
+    embed.setFooter({ text: `@${profile.get("handle") as string}`, iconURL: verifiedBadge });
+  else
+    embed.setFooter({ text: `@${profile.get("handle") as string}` })
 
   return embed;
 }
