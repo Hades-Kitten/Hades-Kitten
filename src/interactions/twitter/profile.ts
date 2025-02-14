@@ -46,6 +46,9 @@ const commandData = new SlashCommandBuilder()
           .setName("banner_picture")
           .setDescription("URL to your banner picture"),
       )
+      .addBooleanOption((option) =>
+        option.setName("verified").setDescription("Whether the account is an official government account"),
+      )
       .addStringOption((option) =>
         option.setName("location").setDescription("Your location"),
       ),
@@ -88,6 +91,9 @@ const commandData = new SlashCommandBuilder()
         option
           .setName("banner_picture")
           .setDescription("URL to your new banner picture"),
+      )
+      .addBooleanOption((option) =>
+        option.setName("verified").setDescription("Whether the account is an official government account"),
       )
       .addStringOption((option) =>
         option.setName("location").setDescription("Your new location"),
@@ -153,6 +159,7 @@ async function execute(
       const profilePicture = interaction.options.getString("profile_picture");
       const bannerPicture = interaction.options.getString("banner_picture");
       const location = interaction.options.getString("location");
+      const verified = interaction.options.getString("location") || false;
 
       const existingProfile = await Profile.findOne({
         where: {
@@ -177,9 +184,10 @@ async function execute(
           profilePicture,
           bannerPicture,
           location,
+          verified
         });
       } catch (error) {
-        if ((error as any).name === "SequelizeValidationError") {
+        if ((error as unknown as { name: string }).name === "SequelizeValidationError") {
           const embed = new EmbedBuilder()
             .setTitle("Invalid Profile")
             .setDescription(
@@ -232,6 +240,7 @@ async function execute(
       const profilePicture = interaction.options.getString("profile_picture");
       const bannerPicture = interaction.options.getString("banner_picture");
       const location = interaction.options.getString("location");
+      const verified = interaction.options.getBoolean("verified");
 
       const profile = await Profile.findOne({
         where: {
@@ -252,6 +261,7 @@ async function execute(
         profilePicture: profilePicture ?? profile.get("profilePicture"),
         bannerPicture: bannerPicture ?? profile.get("bannerPicture"),
         location: location ?? profile.get("location"),
+        verified: verified ?? profile.get("verified"),
       });
 
       const embed = new EmbedBuilder()

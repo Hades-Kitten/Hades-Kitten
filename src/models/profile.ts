@@ -62,6 +62,10 @@ const Profile = sequelize.define(
       type: Sequelize.BOOLEAN,
       defaultValue: true,
     },
+    verified: {
+      type: Sequelize.BOOLEAN,
+      defaultValue: false
+    }
   },
   {
     indexes: [
