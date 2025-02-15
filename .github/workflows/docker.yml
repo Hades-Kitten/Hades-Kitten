@@ -23,6 +23,7 @@ jobs:
     env:
       IMAGE_NAME: ${{ github.repository }}
       TEST_MODE: ${{ github.ref != 'refs/heads/main' }}
+      REGISTRY: ghcr.io
 
     steps:
       - name: Set environment variables
@@ -78,6 +79,6 @@ jobs:
         uses: actions/attest-build-provenance@v2
         if: ${{ env.PUSH }}
         with:
-          subject-name: ghcr.io/${{ github.repository }}
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
