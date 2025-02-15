@@ -43,6 +43,17 @@ bun start
 bun dev # if you want the bot to restart automatically when you make changes
 ```
 
+### Formatting and Linting
+
+We use [Biome](https://biomejs.dev/) for formatting and linting. They offer extensions for all major editors.
+
+When developing, it's recommended that you use the extension for your editor, and that you run make sure that:
+- your code is error free with `biome:lint`, you can apply safe fixes with `biome:lint:apply`, and
+- your code adheres by a standard format with `biome:format`.
+
+You can run both of these all-in-one with `biome:check`, or `biome:check:apply` to apply safe fixes.
+You can also append `:staged` so that only your staged changes are checked.
+
 ## Roadmap
 
 - [ ] All types of Information Command (i.e., nation info, region info, nation info by mention)

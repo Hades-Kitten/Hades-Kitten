@@ -6,7 +6,14 @@
     "start": "bun run src/index.ts",
     "dev": "bun --watch src/index.ts",
     "db:sync": "bun run src/syncdb.ts",
-    "db:migrate": "sequelize db:migrate"
+    "db:migrate": "sequelize db:migrate",
+    "biome:format": "biome format --write",
+    "biome:format:staged": "biome format --write --staged",
+    "biome:lint": "biome lint",
+    "biome:lint:apply": "biome lint --write",
+    "biome:check": "biome check",
+    "biome:check:apply": "biome check --write",
+    "biome:check:staged": "biome check --staged --write"
   },
   "keywords": [],
   "author": "",
@@ -31,6 +38,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.7.9",
     "@types/xml2js": "^0.4.14",
     "tsx": "^4.19.1",
