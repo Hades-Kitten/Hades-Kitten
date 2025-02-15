@@ -1,9 +1,9 @@
 import type {
-  Client,
   ApplicationCommandData,
-  BaseInteraction,
   AutocompleteInteraction,
+  BaseInteraction,
   ButtonInteraction,
+  Client,
   ModalSubmitInteraction,
   StringSelectMenuInteraction,
 } from "discord.js";

@@ -1,15 +1,15 @@
 import {
-  SlashCommandBuilder,
+  ActionRowBuilder,
   type ChatInputCommandInteraction,
   type Client,
-  type StringSelectMenuInteraction,
   EmbedBuilder,
+  SlashCommandBuilder,
   StringSelectMenuBuilder,
-  ActionRowBuilder,
+  type StringSelectMenuInteraction,
 } from "discord.js";
 
-import { getProfileEmbed } from "../../utils/commands/twitter/profile";
 import Profile from "../../models/profile";
+import { getProfileEmbed } from "../../utils/commands/twitter/profile";
 import autocomplete from "../../utils/handleAutocomplete";
 
 const commandData = new SlashCommandBuilder()
@@ -47,7 +47,11 @@ const commandData = new SlashCommandBuilder()
           .setDescription("URL to your banner picture"),
       )
       .addBooleanOption((option) =>
-        option.setName("verified").setDescription("Whether the account is an official government account"),
+        option
+          .setName("verified")
+          .setDescription(
+            "Whether the account is an official government account",
+          ),
       )
       .addStringOption((option) =>
         option.setName("location").setDescription("Your location"),
@@ -93,7 +97,11 @@ const commandData = new SlashCommandBuilder()
           .setDescription("URL to your new banner picture"),
       )
       .addBooleanOption((option) =>
-        option.setName("verified").setDescription("Whether the account is an official government account"),
+        option
+          .setName("verified")
+          .setDescription(
+            "Whether the account is an official government account",
+          ),
       )
       .addStringOption((option) =>
         option.setName("location").setDescription("Your new location"),
@@ -184,10 +192,13 @@ async function execute(
           profilePicture,
           bannerPicture,
           location,
-          verified
+          verified,
         });
       } catch (error) {
-        if ((error as unknown as { name: string }).name === "SequelizeValidationError") {
+        if (
+          (error as unknown as { name: string }).name ===
+          "SequelizeValidationError"
+        ) {
           const embed = new EmbedBuilder()
             .setTitle("Invalid Profile")
             .setDescription(

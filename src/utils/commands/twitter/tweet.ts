@@ -1,10 +1,10 @@
 import type { Message, ModalSubmitInteraction, User } from "discord.js";
 import {
   ActionRowBuilder,
+  AttachmentBuilder,
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
-  AttachmentBuilder
 } from "discord.js";
 import type { Model } from "sequelize";
 
@@ -20,7 +20,7 @@ interface PostInput {
   handle: string;
   content: string;
   replyTo?: string;
-  imagePath?: string
+  imagePath?: string;
 }
 
 async function errorMessage(
@@ -59,7 +59,7 @@ async function constructEmbed(
   profile: Model,
   replyToId?: string,
   replyToMessageUrl?: string,
-  imagePath?: string
+  imagePath?: string,
 ) {
   const content = post.get("content") as string;
 
@@ -71,24 +71,29 @@ async function constructEmbed(
 
     if (tweetProfile) replyHandle = tweetProfile.get("handle") as string;
   }
-  
-  const verifiedBadge = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Twitter_Verified_Badge.svg/1200px-Twitter_Verified_Badge.svg.png";
-  
+
+  const verifiedBadge =
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Twitter_Verified_Badge.svg/1200px-Twitter_Verified_Badge.svg.png";
+
   const embed = new EmbedBuilder()
     .setAuthor({
       name: `${profile.get("displayName") as string}`,
       iconURL: (profile.get("profilePicture") as string) ?? undefined,
     })
-    .setDescription(replyHandle && replyToMessageUrl
-      ? `**[Replying to @${replyHandle}](${replyToMessageUrl})** ${content}`
-      : content)
+    .setDescription(
+      replyHandle && replyToMessageUrl
+        ? `**[Replying to @${replyHandle}](${replyToMessageUrl})** ${content}`
+        : content,
+    )
     .setTimestamp(post.get("timestamp") as unknown as Date)
     .setColor("Blue");
-  
+
   if (profile.get("verified"))
-    embed.setFooter({ text: `@${profile.get("handle") as string}`, iconURL: verifiedBadge });
-  else
-    embed.setFooter({ text: `@${profile.get("handle") as string}` })
+    embed.setFooter({
+      text: `@${profile.get("handle") as string}`,
+      iconURL: verifiedBadge,
+    });
+  else embed.setFooter({ text: `@${profile.get("handle") as string}` });
 
   if (imagePath) embed.setImage(`attachment://${path.basename(imagePath)}`);
   return embed;
@@ -197,28 +202,27 @@ async function newPost(interaction: ModalSubmitInteraction, post: PostInput) {
     posterProfile,
     replyToProfile?.get("id") as string,
     replyToMessage?.url,
-    imagePath
+    imagePath,
   );
-  
+
   const buttonRow = constructButtonRow(newPost.get("id") as string, handle);
 
-  
   type MessageBody = {
-    embeds: EmbedBuilder[],
-    components: ActionRowBuilder<ButtonBuilder>[],
-    files: AttachmentBuilder[]
-  }
-  
+    embeds: EmbedBuilder[];
+    components: ActionRowBuilder<ButtonBuilder>[];
+    files: AttachmentBuilder[];
+  };
+
   let message: Message | null = null;
   const messageBody: MessageBody = {
     embeds: [embed],
     components: [buttonRow],
-    files: []
+    files: [],
   };
-  
+
   if (imagePath) {
-    const attachment = new AttachmentBuilder(imagePath, { 
-      name: path.basename(imagePath)
+    const attachment = new AttachmentBuilder(imagePath, {
+      name: path.basename(imagePath),
     });
     messageBody.files = [attachment];
   }

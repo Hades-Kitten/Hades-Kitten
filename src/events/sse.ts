@@ -1,14 +1,14 @@
 import {
-  type Client,
   type Channel,
-  type TextChannel,
+  type Client,
   EmbedBuilder,
+  type TextChannel,
 } from "discord.js";
 import { EventSource } from "eventsource";
 import type { RMB } from "../types";
 
-import type { Nation as INation, Region as IRegion, SSEEvent } from "../types";
 import Region from "../models/region";
+import type { Nation as INation, Region as IRegion, SSEEvent } from "../types";
 import xmlToJson from "../utils/xmlToJson";
 
 import { logger as eventLogger } from "../handlers/events";

@@ -1,12 +1,12 @@
 import { Client, Events, GatewayIntentBits } from "discord.js";
 
 import env from "./env.ts";
-import { scheduleChannelNameUpdate } from "./utils/scheduledTasks.ts";
 import logger from "./utils/logging.ts";
+import { scheduleChannelNameUpdate } from "./utils/scheduledTasks.ts";
 
+import sseEvents from "./events/sse.ts";
 import registerEvents from "./handlers/events.ts";
 import registerInteractions from "./handlers/interactions.ts";
-import sseEvents from "./events/sse.ts";
 
 const client = new Client({
   intents: (Object.values(GatewayIntentBits) as (string | number)[])

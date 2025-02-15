@@ -1,7 +1,7 @@
 import type { AutocompleteInteraction } from "discord.js";
 import type { Model } from "sequelize";
-import Profile from "./../models/profile";
 import type { Profile as ProfileType } from "../types";
+import Profile from "./../models/profile";
 
 interface ProfileInstance extends Model<ProfileType>, ProfileType {}
 

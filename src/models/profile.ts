@@ -1,5 +1,5 @@
-import sequelize from "../utils/database";
 import Sequelize from "sequelize";
+import sequelize from "../utils/database";
 
 const Profile = sequelize.define(
   "profile",
@@ -64,8 +64,8 @@ const Profile = sequelize.define(
     },
     verified: {
       type: Sequelize.BOOLEAN,
-      defaultValue: false
-    }
+      defaultValue: false,
+    },
   },
   {
     indexes: [

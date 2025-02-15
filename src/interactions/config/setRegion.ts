@@ -1,10 +1,10 @@
 import {
-  type ChatInputCommandInteraction,
-  SlashCommandBuilder,
-  EmbedBuilder,
-  type Client,
   ChannelType,
+  type ChatInputCommandInteraction,
+  type Client,
+  EmbedBuilder,
   PermissionFlagsBits,
+  SlashCommandBuilder,
 } from "discord.js";
 
 import Region from "../../models/region";

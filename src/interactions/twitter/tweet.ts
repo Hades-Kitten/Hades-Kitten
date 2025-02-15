@@ -1,35 +1,35 @@
-import {
-  type ButtonInteraction,
-  type ChatInputCommandInteraction,
-  type Client,
-  type ModalSubmitInteraction,
-  type StringSelectMenuInteraction,
-  type BaseGuildTextChannel,
-  type Message,
-  SlashCommandBuilder,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  StringSelectMenuBuilder,
-} from "discord.js";
+import fs from "fs";
 import crypto from "node:crypto";
 import path from "node:path";
-import fs from "fs";
+import {
+  ActionRowBuilder,
+  type BaseGuildTextChannel,
+  ButtonBuilder,
+  type ButtonInteraction,
+  ButtonStyle,
+  type ChatInputCommandInteraction,
+  type Client,
+  type Message,
+  ModalBuilder,
+  type ModalSubmitInteraction,
+  SlashCommandBuilder,
+  StringSelectMenuBuilder,
+  type StringSelectMenuInteraction,
+  TextInputBuilder,
+  TextInputStyle,
+} from "discord.js";
 
 import Profile from "../../models/profile";
-import Tweet from "../../models/tweet";
 import Region from "../../models/region";
+import Tweet from "../../models/tweet";
 
 import newPost from "../../utils/commands/twitter/tweet";
 
-import autocomplete from "../../utils/handleAutocomplete";
 import { getProfileEmbed } from "../../utils/commands/twitter/profile";
+import autocomplete from "../../utils/handleAutocomplete";
 
 function generateRandomString(length: number): string {
-  return crypto.randomBytes(length).toString('hex').slice(0, length);
+  return crypto.randomBytes(length).toString("hex").slice(0, length);
 }
 
 const commandData = new SlashCommandBuilder()
@@ -43,9 +43,7 @@ const commandData = new SlashCommandBuilder()
       .setRequired(true),
   )
   .addAttachmentOption((option) =>
-    option
-      .setName("image")
-      .setDescription("An image to go with your post")
+    option.setName("image").setDescription("An image to go with your post"),
   );
 
 async function execute(
@@ -71,23 +69,23 @@ async function execute(
   }
 
   const attachment = interaction.options.getAttachment("image");
-    
+
   let imagePath: string | undefined;
-  
+
   if (attachment) {
     const randomName = generateRandomString(8);
     const fileExtension = path.extname(attachment.name);
     imagePath = path.join("tmp", `${randomName}${fileExtension}`);
-    
+
     if (!fs.existsSync("tmp")) fs.mkdirSync("tmp");
     const response = await fetch(attachment.url);
     const buffer = await response.arrayBuffer();
     fs.writeFileSync(imagePath, Buffer.from(buffer));
   }
 
-  const modalId = `post:${handle}:modal` 
-  const lastPart = imagePath ? `:${imagePath}` : ''
-  
+  const modalId = `post:${handle}:modal`;
+  const lastPart = imagePath ? `:${imagePath}` : "";
+
   const modal = new ModalBuilder()
     .setCustomId(`${modalId}${lastPart}`)
     .setTitle("Create Post");
@@ -117,13 +115,13 @@ async function modalExecute(
     case "modal": {
       const content = interaction.fields.getTextInputValue("tweetContent");
       const imagePath = rest[1];
-      
+
       await newPost(interaction, {
         handle,
         content,
-        imagePath
+        imagePath,
       });
-      
+
       if (imagePath && fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
       break;
     }

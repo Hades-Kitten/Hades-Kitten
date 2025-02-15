@@ -1,7 +1,7 @@
 import { type Client, Collection } from "discord.js";
 import type { IEvent } from "../types.ts";
-import { crawlDirectory, getHandlerPath } from "./_common.ts";
 import { Logger } from "../utils/logging.ts";
+import { crawlDirectory, getHandlerPath } from "./_common.ts";
 
 const logger = new Logger("events");
 

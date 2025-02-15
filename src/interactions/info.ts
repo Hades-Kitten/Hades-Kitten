@@ -1,21 +1,21 @@
 import {
-  type ChatInputCommandInteraction,
-  SlashCommandBuilder,
-  EmbedBuilder,
-  ButtonStyle,
   ActionRowBuilder,
   ButtonBuilder,
-  ChannelType,
-  type Client,
   type ButtonInteraction,
+  ButtonStyle,
+  ChannelType,
+  type ChatInputCommandInteraction,
+  type Client,
+  EmbedBuilder,
   InteractionContextType,
+  SlashCommandBuilder,
 } from "discord.js";
-import xmlToJson from "../utils/xmlToJson";
 import env from "../env.ts";
 import formatter from "../utils/formatStringsAndNumbers.ts";
+import xmlToJson from "../utils/xmlToJson";
 
-import type { Nation, Region } from "../types";
 import Verify from "../models/verify";
+import type { Nation, Region } from "../types";
 
 const nationAuthor = (nationData: Nation) => ({
   name: nationData.FULLNAME,
@@ -36,14 +36,18 @@ async function generateNationsPage(regionData: Region): Promise<EmbedBuilder> {
   return new EmbedBuilder()
     .setAuthor(regionAuthor(regionData))
     .setTitle("Nations")
-    .setDescription(`${formatter.formatNationsArray(regionData.NATIONS) || "Unknown"}`)
+    .setDescription(
+      `${formatter.formatNationsArray(regionData.NATIONS) || "Unknown"}`,
+    );
 }
-async function generateEmbassiesPage(regionData: Region): Promise<EmbedBuilder> {
+async function generateEmbassiesPage(
+  regionData: Region,
+): Promise<EmbedBuilder> {
   const embassiesArray: string[] = [];
 
   if (regionData.EMBASSIES && Array.isArray(regionData.EMBASSIES.EMBASSY)) {
     for (const embassy of regionData.EMBASSIES.EMBASSY) {
-      if (typeof embassy === 'string') {
+      if (typeof embassy === "string") {
         embassiesArray.push(embassy.trim());
       }
     }
@@ -61,53 +65,68 @@ async function generateEmbassiesPage(regionData: Region): Promise<EmbedBuilder> 
   return new EmbedBuilder()
     .setAuthor(regionAuthor(regionData))
     .setTitle("Embassies")
-    .setDescription(`${replacedNonRejectedEmbassies || "Unknown"}`)
+    .setDescription(`${replacedNonRejectedEmbassies || "Unknown"}`);
 }
 
-async function generateRegionalGeneralInformationPage(regionData: Region): Promise<EmbedBuilder> {
-  let wadelegate = regionData.DELEGATE ? `[${formatter.formatNationName(regionData.DELEGATE)}](https://www.nationstates.com/nation=${regionData.DELEGATE})` : `Power Vaccum`;
+async function generateRegionalGeneralInformationPage(
+  regionData: Region,
+): Promise<EmbedBuilder> {
+  const wadelegate = regionData.DELEGATE
+    ? `[${formatter.formatNationName(regionData.DELEGATE)}](https://www.nationstates.com/nation=${regionData.DELEGATE})`
+    : `Power Vaccum`;
 
-  const officersEmbed = regionData.OFFICERS.OFFICER.map(officer =>
-    `**${officer.OFFICE}**: [${formatter.formatNationName(officer.NATION)}](https://www.nationstates.net/nation=${officer.NATION}) and, has been in office since <t:${officer.TIME}:R>`
-  ).join('\n\n');
+  const officersEmbed = regionData.OFFICERS.OFFICER.map(
+    (officer) =>
+      `**${officer.OFFICE}**: [${formatter.formatNationName(officer.NATION)}](https://www.nationstates.net/nation=${officer.NATION}) and, has been in office since <t:${officer.TIME}:R>`,
+  ).join("\n\n");
 
   return new EmbedBuilder()
     .setAuthor(regionAuthor(regionData))
     .setImage(`https://www.nationstates.net${regionData.BANNERURL}`)
-    .setDescription(`**Governor:** [${formatter.formatNationName(regionData.GOVERNOR)}](https://www.nationstates.net/nation=${regionData.GOVERNOR})\n\n **WA Delegate:** ${wadelegate}\n\n ${officersEmbed}`)
+    .setDescription(
+      `**Governor:** [${formatter.formatNationName(regionData.GOVERNOR)}](https://www.nationstates.net/nation=${regionData.GOVERNOR})\n\n **WA Delegate:** ${wadelegate}\n\n ${officersEmbed}`,
+    )
     .addFields(
       { name: "Global Power", value: regionData.POWER, inline: true },
-      { name: "Founded on", value: `<t:${regionData.FOUNDEDTIME}>`, inline: true }
-    )
+      {
+        name: "Founded on",
+        value: `<t:${regionData.FOUNDEDTIME}>`,
+        inline: true,
+      },
+    );
 }
 
 function factbookListFun(nationData: Nation) {
   let factbookembed = "";
-  const factbooks = nationData.FACTBOOKLIST?.FACTBOOK || null
-  if (factbooks == null || factbooks.length == 0 as any) {
-    factbookembed += ["Unknown"]
-  } else for (let i = 0; i < factbooks.length; i++) {
-    const id = factbooks[i].$.id
+  const factbooks = nationData.FACTBOOKLIST?.FACTBOOK || null;
+  if (factbooks == null || factbooks.length == (0 as any)) {
+    factbookembed += ["Unknown"];
+  } else
+    for (let i = 0; i < factbooks.length; i++) {
+      const id = factbooks[i].$.id;
 
-    const title = factbooks[i].TITLE
-    const extractedTitle = title.replace(/<!\[CDATA\[\]\]>/, '').trim();
+      const title = factbooks[i].TITLE;
+      const extractedTitle = title.replace(/<!\[CDATA\[\]\]>/, "").trim();
 
-    const subcat = factbooks[i].SUBCATEGORY
+      const subcat = factbooks[i].SUBCATEGORY;
 
-    factbookembed += [
-      `-> **[${extractedTitle} - ${subcat}](https://www.nationstates.net/nation=${encodeURIComponent(nationData.NAME)}/detail=factbook/id=${id})**`
-    ].join('\n') + "\n"
-    if (factbookembed.length > 4090) {
-      factbookembed = factbookembed.toString().substring(0, 4090)
+      factbookembed +=
+        [
+          `-> **[${extractedTitle} - ${subcat}](https://www.nationstates.net/nation=${encodeURIComponent(nationData.NAME)}/detail=factbook/id=${id})**`,
+        ].join("\n") + "\n";
+      if (factbookembed.length > 4090) {
+        factbookembed = factbookembed.toString().substring(0, 4090);
+      }
     }
-  }
-  return { factbookembed }
+  return { factbookembed };
 }
 async function factbooksPage(nationData: Nation): Promise<EmbedBuilder> {
-  const { factbookembed } = factbookListFun(nationData)
+  const { factbookembed } = factbookListFun(nationData);
   return new EmbedBuilder()
     .setTitle("Factbooks")
-    .setDescription(factbookembed || "<:nobitches:1242845720810356867> No Factbooks?")
+    .setDescription(
+      factbookembed || "<:nobitches:1242845720810356867> No Factbooks?",
+    );
 }
 
 function policiesFun(nationData: Nation) {
@@ -119,52 +138,37 @@ function policiesFun(nationData: Nation) {
   let lowandorder = ``;
   let economicsystem = "";
   for (const policy of nationData.POLICIES?.POLICY ?? []) {
-    const name = policy?.NAME
-    const category = policy?.CAT
-    const desc = policy?.DESC
+    const name = policy?.NAME;
+    const category = policy?.CAT;
+    const desc = policy?.DESC;
 
     if (category == "Government") {
-      gov += [
-        `**${name}**`,
-        `> ${desc}`
-      ].join('\n') + "\n";
+      gov += [`**${name}**`, `> ${desc}`].join("\n") + "\n";
     } else if (category == "Society") {
-      society += [
-        `**${name}**`,
-        `> ${desc}`
-      ].join('\n') + "\n";
+      society += [`**${name}**`, `> ${desc}`].join("\n") + "\n";
     } else if (category == "Economy") {
-      economy += [
-        `**${name}**`,
-        `> ${desc}`
-      ].join('\n') + "\n";
+      economy += [`**${name}**`, `> ${desc}`].join("\n") + "\n";
     } else if (category == "International") {
-      international += [
-        `**${name}**`,
-        `> ${desc}`
-      ].join('\n') + "\n";
+      international += [`**${name}**`, `> ${desc}`].join("\n") + "\n";
     } else if (category == "Law & Order") {
-      lowandorder += [
-        `**${name}**`,
-        `> ${desc}`
-      ].join('\n') + "\n";
+      lowandorder += [`**${name}**`, `> ${desc}`].join("\n") + "\n";
     }
 
-    policyembed = `**Government:**\n${gov || "None\n"}\n **Society:**\n${society || "None\n"}\n **Law & Order:**\n${lowandorder || "None\n"}\n **Economy:**\n${economy || "None\n"}\n **International:**\n${international || "None\n"}`
+    policyembed = `**Government:**\n${gov || "None\n"}\n **Society:**\n${society || "None\n"}\n **Law & Order:**\n${lowandorder || "None\n"}\n **Economy:**\n${economy || "None\n"}\n **International:**\n${international || "None\n"}`;
 
     if (name == "Capitalism") {
-      economicsystem = ":dollar: Capitalism - an economic and political system in which property, business, and industry are controlled by private owners rather than by the state, with the purpose of making a profit";
+      economicsystem =
+        ":dollar: Capitalism - an economic and political system in which property, business, and industry are controlled by private owners rather than by the state, with the purpose of making a profit";
     } else if (name === "Socialism") {
-      economicsystem = ":classical_building: Socialism - a social and economic doctrine that calls for public rather than private ownership or control of property and natural resources.";
+      economicsystem =
+        ":classical_building: Socialism - a social and economic doctrine that calls for public rather than private ownership or control of property and natural resources.";
     }
-  };
-  return { economicsystem, policyembed }
+  }
+  return { economicsystem, policyembed };
 }
 async function policiesPage(nationData: Nation): Promise<EmbedBuilder> {
-  const { policyembed } = policiesFun(nationData)
-  return new EmbedBuilder()
-    .setTitle("Policies")
-    .setDescription(policyembed)
+  const { policyembed } = policiesFun(nationData);
+  return new EmbedBuilder().setTitle("Policies").setDescription(policyembed);
 }
 
 function censusFun(nationData: Nation) {
@@ -200,7 +204,7 @@ function censusFun(nationData: Nation) {
       wealthgaps = score;
     }
   }
-  const ppp = (economy2 / 75) * (Math.pow(Math.pow((ecofre / 500), 2), 0.5) + 1)
+  const ppp = (economy2 / 75) * (Math.pow(Math.pow(ecofre / 500, 2), 0.5) + 1);
   const GPPP = ppp * nomgdp;
 
   return {
@@ -223,21 +227,59 @@ async function expenditurePage(nationData: Nation): Promise<EmbedBuilder> {
   const gov = nationData.GOVT;
   return new EmbedBuilder()
     .setTitle(`Expenditure of ${nationData.NAME}`)
-    .setDescription(`About ${sectors.GOVERNMENT}% of ${formatter.formatNumber(nomgdp)} Nominal GDP is spent on expenditures (${formatter.formatNumber(Math.round(nomgdp * (sectors.GOVERNMENT as unknown as number / 100)))} Nominal GDP)`)
+    .setDescription(
+      `About ${sectors.GOVERNMENT}% of ${formatter.formatNumber(nomgdp)} Nominal GDP is spent on expenditures (${formatter.formatNumber(Math.round(nomgdp * ((sectors.GOVERNMENT as unknown as number) / 100)))} Nominal GDP)`,
+    )
     .addFields(
-      { name: ":classical_building: Administration", value: `${gov.ADMINISTRATION}%`, inline: true },
+      {
+        name: ":classical_building: Administration",
+        value: `${gov.ADMINISTRATION}%`,
+        inline: true,
+      },
       { name: ":shield: Defence", value: `${gov.DEFENCE}%`, inline: true },
       { name: ":book: Education", value: `${gov.EDUCATION}%`, inline: true },
-      { name: ":maple_leaf: Environment", value: `${gov.ENVIRONMENT}%`, inline: true },
-      { name: ":anatomical_heart: Healthcare", value: `${gov.HEALTHCARE}%`, inline: true },
-      { name: ":shopping_bags: Commerce", value: `${gov.COMMERCE}%`, inline: true },
-      { name: ":handshake: International Aid", value: `${gov.INTERNATIONALAID}%`, inline: true },
-      { name: ":scales: Law and Order", value: `${gov.LAWANDORDER}%`, inline: true },
-      { name: ":bullettrain_side: Public Transport", value: `${gov.PUBLICTRANSPORT}%`, inline: true },
-      { name: ":peace: Social Equality", value: `${gov.SOCIALEQUALITY}%`, inline: true },
-      { name: ":palms_up_together: Spirituality", value: `${gov.SPIRITUALITY}%`, inline: true },
+      {
+        name: ":maple_leaf: Environment",
+        value: `${gov.ENVIRONMENT}%`,
+        inline: true,
+      },
+      {
+        name: ":anatomical_heart: Healthcare",
+        value: `${gov.HEALTHCARE}%`,
+        inline: true,
+      },
+      {
+        name: ":shopping_bags: Commerce",
+        value: `${gov.COMMERCE}%`,
+        inline: true,
+      },
+      {
+        name: ":handshake: International Aid",
+        value: `${gov.INTERNATIONALAID}%`,
+        inline: true,
+      },
+      {
+        name: ":scales: Law and Order",
+        value: `${gov.LAWANDORDER}%`,
+        inline: true,
+      },
+      {
+        name: ":bullettrain_side: Public Transport",
+        value: `${gov.PUBLICTRANSPORT}%`,
+        inline: true,
+      },
+      {
+        name: ":peace: Social Equality",
+        value: `${gov.SOCIALEQUALITY}%`,
+        inline: true,
+      },
+      {
+        name: ":palms_up_together: Spirituality",
+        value: `${gov.SPIRITUALITY}%`,
+        inline: true,
+      },
       { name: ":relieved: Welfare", value: `${gov.WELFARE}%`, inline: true },
-    )
+    );
 }
 
 async function economicPage(nationData: Nation): Promise<EmbedBuilder> {
@@ -253,14 +295,17 @@ async function economicPage(nationData: Nation): Promise<EmbedBuilder> {
     ppp,
     GPPP,
   } = censusFun(nationData);
-  const { economicsystem } = policiesFun(nationData)
+  const { economicsystem } = policiesFun(nationData);
   return new EmbedBuilder()
     .setTitle(`Economy of ${nationData.NAME}`)
     .setDescription(
       `The economic system of ${nationData.NAME} is ${economicsystem}\n\n${nationData.INDUSTRYDESC}`,
     )
     .addFields(
-      { name: "**GDP (Nominal)**", value: formatter.formatNumber(Math.round(nomgdp)) },
+      {
+        name: "**GDP (Nominal)**",
+        value: formatter.formatNumber(Math.round(nomgdp)),
+      },
       {
         name: "**GDP Per Capita (Nominal)**",
         value: formatter.formatNumber(Number.parseInt(nomgdppercap.toString())),
@@ -281,19 +326,26 @@ async function economicPage(nationData: Nation): Promise<EmbedBuilder> {
         name: "**Purchasing Power Parity (PPP)**",
         value: `$ ${formatter.formatNumber(ppp)}`,
       },
-      { name: "**GDP PPP**", value: `$ ${formatter.formatNumber(Math.round(GPPP))}` },
+      {
+        name: "**GDP PPP**",
+        value: `$ ${formatter.formatNumber(Math.round(GPPP))}`,
+      },
       {
         name: "**GDP PPP Per Capita**",
         value: `$ ${formatter.formatNumber(GPPP / populationcensus)}`,
       },
       {
         name: "**Average Income of Poor (PPP)**",
-        value: formatter.formatNumber(Number.parseInt((poorincome * ppp).toString())),
+        value: formatter.formatNumber(
+          Number.parseInt((poorincome * ppp).toString()),
+        ),
         inline: true,
       },
       {
         name: "**Average Income of Rich (PPP)**",
-        value: formatter.formatNumber(Number.parseInt((richincome * ppp).toString())),
+        value: formatter.formatNumber(
+          Number.parseInt((richincome * ppp).toString()),
+        ),
         inline: true,
       },
       { name: "**Wealth gap**", value: wealthgaps.toString(), inline: true },
@@ -336,8 +388,8 @@ async function generateGeneralInformationPage(
         name: "Population",
         value: nationData.POPULATION
           ? `${formatter.formatNumber(
-            Number.parseInt(nationData.POPULATION) * 1000000,
-          )} ${nationData.DEMONYM2PLURAL}`
+              Number.parseInt(nationData.POPULATION) * 1000000,
+            )} ${nationData.DEMONYM2PLURAL}`
           : "N/A",
         inline: true,
       },
@@ -362,8 +414,8 @@ async function generateGeneralInformationPage(
         name: "Founded",
         value: nationData.FOUNDEDTIME
           ? `<t:${Math.round(
-            Number.parseInt(nationData.FOUNDEDTIME),
-          )}:d>, <t:${Math.round(Number.parseInt(nationData.FOUNDEDTIME))}:t>`
+              Number.parseInt(nationData.FOUNDEDTIME),
+            )}:d>, <t:${Math.round(Number.parseInt(nationData.FOUNDEDTIME))}:t>`
           : "N/A",
         inline: true,
       },
@@ -399,8 +451,8 @@ async function fetchNationData(nationName: string) {
     const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
-        'User-Agent': env.data.USER_AGENT
-      }
+        "User-Agent": env.data.USER_AGENT,
+      },
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.text();
@@ -418,8 +470,8 @@ async function fetchRegionData(regionName: string) {
     const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
-        'User-Agent': env.data.USER_AGENT
-      }
+        "User-Agent": env.data.USER_AGENT,
+      },
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.text();
@@ -543,9 +595,7 @@ async function updateRegionPage(
 
   buttonRow.addComponents([
     new ButtonBuilder()
-      .setCustomId(
-        `${commandData.name}:${regionName}:turn:${currentPage - 1}`,
-      )
+      .setCustomId(`${commandData.name}:${regionName}:turn:${currentPage - 1}`)
       .setLabel("Previous")
       .setStyle(ButtonStyle.Primary)
       .setDisabled(currentPage === 0),
@@ -555,9 +605,7 @@ async function updateRegionPage(
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(true),
     new ButtonBuilder()
-      .setCustomId(
-        `${commandData.name}:${regionName}:turn:${currentPage + 1}`,
-      )
+      .setCustomId(`${commandData.name}:${regionName}:turn:${currentPage + 1}`)
       .setLabel("Next")
       .setStyle(ButtonStyle.Primary)
       .setDisabled(currentPage === maxPage - 1),
@@ -595,8 +643,8 @@ async function execute(
   if (interaction.channel?.type !== ChannelType.GuildText) return;
 
   const nationName = interaction.options.getString("nation");
-  const mentionedUser = interaction.options.getUser("user")
-  const regionName = interaction.options.getString("region")
+  const mentionedUser = interaction.options.getUser("user");
+  const regionName = interaction.options.getString("region");
 
   let optionsProvided = 0;
   if (nationName) optionsProvided++;
@@ -604,7 +652,7 @@ async function execute(
   if (regionName) optionsProvided++;
 
   if (optionsProvided > 1) {
-    await interaction.reply('You can only provide one option at a time.');
+    await interaction.reply("You can only provide one option at a time.");
     return;
   }
 
@@ -612,7 +660,11 @@ async function execute(
 
   if (nationName !== null && regionName == null && mentionedUser == null) {
     nationToLookup = nationName;
-  } else if (mentionedUser !== null && nationName == null && regionName == null) {
+  } else if (
+    mentionedUser !== null &&
+    nationName == null &&
+    regionName == null
+  ) {
     const userData = await Verify.findOne({
       where: { userId: mentionedUser.id, guildId: interaction.guild?.id },
     });
@@ -624,7 +676,11 @@ async function execute(
       return await interaction.reply(
         "This user's data is not available in the database. It could be that the user hasn't verified.",
       );
-  } else if (mentionedUser == null && regionName == null && nationName == null) {
+  } else if (
+    mentionedUser == null &&
+    regionName == null &&
+    nationName == null
+  ) {
     const userData = await Verify.findOne({
       where: { userId: interaction.user.id, guildId: interaction.guild?.id },
     });
@@ -638,7 +694,13 @@ async function execute(
       );
   }
   if (nationToLookup) {
-    const pageFunctions = [generateGeneralInformationPage, economicPage, expenditurePage, policiesPage, factbooksPage];
+    const pageFunctions = [
+      generateGeneralInformationPage,
+      economicPage,
+      expenditurePage,
+      policiesPage,
+      factbooksPage,
+    ];
     await updatePage(
       interaction,
       nationToLookup,
@@ -649,7 +711,11 @@ async function execute(
   }
 
   if (mentionedUser == null && nationName == null && regionName !== null) {
-    const pageFunctions = [generateRegionalGeneralInformationPage, generateNationsPage, generateEmbassiesPage];
+    const pageFunctions = [
+      generateRegionalGeneralInformationPage,
+      generateNationsPage,
+      generateEmbassiesPage,
+    ];
     await updateRegionPage(
       interaction,
       regionName,
@@ -673,7 +739,13 @@ async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
         flags: ["Ephemeral"],
       });
     }
-    const pageFunctions = [generateGeneralInformationPage, economicPage, expenditurePage, policiesPage, factbooksPage];
+    const pageFunctions = [
+      generateGeneralInformationPage,
+      economicPage,
+      expenditurePage,
+      policiesPage,
+      factbooksPage,
+    ];
     await updatePage(
       interaction,
       nationName,
@@ -689,7 +761,11 @@ async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
         flags: ["Ephemeral"],
       });
     }
-    const pageFunctions = [generateRegionalGeneralInformationPage, generateNationsPage, generateEmbassiesPage];
+    const pageFunctions = [
+      generateRegionalGeneralInformationPage,
+      generateNationsPage,
+      generateEmbassiesPage,
+    ];
     await updateRegionPage(
       interaction,
       nationName,

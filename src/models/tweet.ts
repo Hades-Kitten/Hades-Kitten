@@ -1,5 +1,5 @@
-import sequelize from "../utils/database";
 import Sequelize from "sequelize";
+import sequelize from "../utils/database";
 
 const Tweet = sequelize.define("tweet", {
   profileId: {

@@ -1,8 +1,8 @@
-import VerifyRole from "./models/verifyRole";
-import Verify from "./models/verify";
-import Region from "./models/region";
 import Profile from "./models/profile";
+import Region from "./models/region";
 import Tweet from "./models/tweet";
+import Verify from "./models/verify";
+import VerifyRole from "./models/verifyRole";
 
 import runMigrations from "./db/_migrations";
 import sequealize from "./utils/database";

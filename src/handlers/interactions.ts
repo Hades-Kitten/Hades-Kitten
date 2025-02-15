@@ -2,14 +2,14 @@ import {
   type ApplicationCommandData,
   type Client,
   Collection,
+  REST,
   Routes,
   type Snowflake,
-  REST,
 } from "discord.js";
-import type { ICommand } from "../types.ts";
 import env from "../env.ts";
-import { crawlDirectory, getHandlerPath } from "./_common.ts";
+import type { ICommand } from "../types.ts";
 import { Logger } from "../utils/logging.ts";
+import { crawlDirectory, getHandlerPath } from "./_common.ts";
 
 const logger = new Logger("interactions");
 export const commands = new Collection<string, ICommand>();

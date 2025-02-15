@@ -1,24 +1,24 @@
 import {
-  type ChatInputCommandInteraction,
-  SlashCommandBuilder,
-  EmbedBuilder,
-  type Client,
-  type ButtonInteraction,
   ActionRowBuilder,
   ButtonBuilder,
+  type ButtonInteraction,
   ButtonStyle,
+  type ChatInputCommandInteraction,
+  type Client,
+  EmbedBuilder,
+  GuildMemberRoleManager,
+  InteractionContextType,
   ModalBuilder,
+  type ModalSubmitInteraction,
+  SlashCommandBuilder,
   TextInputBuilder,
   TextInputStyle,
-  type ModalSubmitInteraction,
-  InteractionContextType,
-  GuildMemberRoleManager,
 } from "discord.js";
 
-import xmlToJson from "../utils/xmlToJson";
 import Verify from "../models/verify";
-import type { VerifyData } from "../types";
 import verify_role from "../models/verifyRole";
+import type { VerifyData } from "../types";
+import xmlToJson from "../utils/xmlToJson";
 
 const commandData = new SlashCommandBuilder()
   .setName("verify")
@@ -101,7 +101,9 @@ async function modalExecute(
   const [data] = await Verify.findOrCreate({
     where: { userId: interaction.user.id, guildId: interaction.guild?.id },
   });
-  const verifyrole = await verify_role.findOne({ where: { guildId: interaction.guild?.id } })
+  const verifyrole = await verify_role.findOne({
+    where: { guildId: interaction.guild?.id },
+  });
   await data.update({ nation: nationName, code: code });
 
   const VerificationApiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?a=verify&nation=${nationName}&checksum=${code}`;
@@ -130,8 +132,14 @@ async function modalExecute(
           .setDescription(`Welcome ${nationName}, enjoy your stay!`);
         await interaction.editReply({ embeds: [embed] });
       } else {
-        const role = interaction.guild?.roles.cache.get((verifyrole as any).roleId);
-        if (interaction.member && interaction.member.roles instanceof GuildMemberRoleManager) await interaction.member.roles.add(role?.id as any);
+        const role = interaction.guild?.roles.cache.get(
+          (verifyrole as any).roleId,
+        );
+        if (
+          interaction.member &&
+          interaction.member.roles instanceof GuildMemberRoleManager
+        )
+          await interaction.member.roles.add(role?.id as any);
         else return;
 
         const embed = new EmbedBuilder()

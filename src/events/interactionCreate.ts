@@ -1,4 +1,4 @@
-import { type Client, Events, type BaseInteraction } from "discord.js";
+import { type BaseInteraction, type Client, Events } from "discord.js";
 import { commands } from "../handlers/interactions";
 
 import { logger as eventLogger } from "../handlers/events";

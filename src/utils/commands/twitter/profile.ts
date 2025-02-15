@@ -21,9 +21,13 @@ async function getProfileEmbed(handle: string) {
       { name: "Following", value: following.toString(), inline: true },
     )
     .setColor("Blue");
-  
+
   if (profile.get("verified"))
-    embed.setFooter({ text: "Verified Government Account", iconURL: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Twitter_Verified_Badge.svg/1200px-Twitter_Verified_Badge.svg.png" });
+    embed.setFooter({
+      text: "Verified Government Account",
+      iconURL:
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Twitter_Verified_Badge.svg/1200px-Twitter_Verified_Badge.svg.png",
+    });
 
   if (profile.get("profilePicture"))
     embed.setThumbnail(profile.get("profilePicture") as string);
