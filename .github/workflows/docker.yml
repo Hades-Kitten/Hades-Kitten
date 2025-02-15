@@ -14,6 +14,12 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
     env:
       IMAGE_NAME: ${{ github.repository }}
       TEST_MODE: ${{ github.ref != 'refs/heads/main' }}
@@ -30,9 +36,12 @@ jobs:
           echo "gitgub ref: ${{ github.ref }}"
           echo "gitgub event: ${{ github.event_name }}"
           echo "repository: ${{ github.repository }}"
+          echo "test mode: ${{ env.TEST_MODE }}"
+          echo ""
+          echo "push: ${{ github.event_name != 'pull_request' && !env.TEST_MODE }}"
+          echo "load: ${{ github.event_name == 'pull_request' || env.TEST_MODE }}"
 
       - name: Login to GitHub Container Registry
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -50,6 +59,7 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' && !env.TEST_MODE }}
+          load: ${{ github.event_name == 'pull_request' || env.TEST_MODE }}
           tags: |
             ghcr.io/${{ steps.prep.outputs.repository }}:latest
             ghcr.io/${{ steps.prep.outputs.repository }}:${{ github.sha }}
