@@ -129,6 +129,7 @@ async function modalExecute(
       if (!interaction.channelId) return;
       const tweetId = rest[1];
       const content = interaction.fields.getTextInputValue("replyContent");
+      const imageUrl = interaction.fields.getTextInputValue("imageUrl");
 
       const tweet = await Tweet.findOne({ where: { id: tweetId } });
       if (!tweet)
@@ -137,12 +138,26 @@ async function modalExecute(
           flags: ["Ephemeral"],
         });
 
+      let imagePath: string | undefined;
+
+      if (imageUrl) {
+        const randomName = generateRandomString(8);
+        imagePath = path.join("tmp", `${randomName}.png`);
+
+        if (!fs.existsSync("tmp")) fs.mkdirSync("tmp");
+        const response = await fetch(imageUrl);
+        const buffer = await response.arrayBuffer();
+        fs.writeFileSync(imagePath, Buffer.from(buffer));
+      }
+
       await newPost(interaction, {
         handle,
         content,
         replyTo: tweet.get("id") as string,
+        imagePath,
       });
 
+      if (imagePath && fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
       break;
     }
     default:
@@ -275,10 +290,18 @@ async function selectMenuExecute(
       .setMaxLength(280)
       .setRequired(true);
 
+    const imageInput = new TextInputBuilder()
+      .setCustomId("imageUrl")
+      .setLabel("Image URL")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(false);
+
     const firstActionRow =
       new ActionRowBuilder<TextInputBuilder>().addComponents(replyInput);
+    const secondActionRow =
+      new ActionRowBuilder<TextInputBuilder>().addComponents(imageInput);
 
-    modal.addComponents(firstActionRow);
+    modal.addComponents(firstActionRow, secondActionRow);
     await interaction.showModal(modal);
   } else if (rest[0] === "pickLikeProfile") {
     const handle = interaction.values[0];
