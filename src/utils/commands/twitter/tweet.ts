@@ -4,8 +4,11 @@ import {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
+  AttachmentBuilder
 } from "discord.js";
 import type { Model } from "sequelize";
+
+import path from "node:path";
 
 import Profile from "../../../models/profile";
 import Region from "../../../models/region";
@@ -17,6 +20,7 @@ interface PostInput {
   handle: string;
   content: string;
   replyTo?: string;
+  imagePath?: string
 }
 
 async function errorMessage(
@@ -55,6 +59,7 @@ async function constructEmbed(
   profile: Model,
   replyToId?: string,
   replyToMessageUrl?: string,
+  imagePath?: string
 ) {
   const content = post.get("content") as string;
 
@@ -85,6 +90,7 @@ async function constructEmbed(
   else
     embed.setFooter({ text: `@${profile.get("handle") as string}` })
 
+  if (imagePath) embed.setImage(`attachment://${path.basename(imagePath)}`);
   return embed;
 }
 
@@ -114,7 +120,7 @@ async function newPost(interaction: ModalSubmitInteraction, post: PostInput) {
       interaction,
       "You must be in a server to post on Twatter",
     );
-  const { handle, content, replyTo } = post;
+  const { handle, content, replyTo, imagePath } = post;
   if (!handle) throw new Error("No handle provided");
   if (!content) throw new Error("No content provided");
 
@@ -191,15 +197,31 @@ async function newPost(interaction: ModalSubmitInteraction, post: PostInput) {
     posterProfile,
     replyToProfile?.get("id") as string,
     replyToMessage?.url,
+    imagePath
   );
-
+  
   const buttonRow = constructButtonRow(newPost.get("id") as string, handle);
 
+  
+  type MessageBody = {
+    embeds: EmbedBuilder[],
+    components: ActionRowBuilder<ButtonBuilder>[],
+    files: AttachmentBuilder[]
+  }
+  
   let message: Message | null = null;
-  const messageBody = {
+  const messageBody: MessageBody = {
     embeds: [embed],
     components: [buttonRow],
+    files: []
   };
+  
+  if (imagePath) {
+    const attachment = new AttachmentBuilder(imagePath, { 
+      name: path.basename(imagePath)
+    });
+    messageBody.files = [attachment];
+  }
 
   if (replyToMessage) message = await replyToMessage.reply(messageBody);
   else message = await tweetChannel.send(messageBody);

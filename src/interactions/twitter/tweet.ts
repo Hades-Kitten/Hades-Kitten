@@ -5,18 +5,19 @@ import {
   type ModalSubmitInteraction,
   type StringSelectMenuInteraction,
   type BaseGuildTextChannel,
+  type Message,
   SlashCommandBuilder,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
   ActionRowBuilder,
-  EmbedBuilder,
-  ChannelType,
   ButtonBuilder,
   ButtonStyle,
   StringSelectMenuBuilder,
-  Message,
 } from "discord.js";
+import crypto from "node:crypto";
+import path from "node:path";
+import fs from "fs";
 
 import Profile from "../../models/profile";
 import Tweet from "../../models/tweet";
@@ -27,6 +28,10 @@ import newPost from "../../utils/commands/twitter/tweet";
 import autocomplete from "../../utils/handleAutocomplete";
 import { getProfileEmbed } from "../../utils/commands/twitter/profile";
 
+function generateRandomString(length: number): string {
+  return crypto.randomBytes(length).toString('hex').slice(0, length);
+}
+
 const commandData = new SlashCommandBuilder()
   .setName("post")
   .setDescription("Create a new post")
@@ -36,6 +41,11 @@ const commandData = new SlashCommandBuilder()
       .setDescription("The handle to post from")
       .setAutocomplete(true)
       .setRequired(true),
+  )
+  .addAttachmentOption((option) =>
+    option
+      .setName("image")
+      .setDescription("An image to go with your post")
   );
 
 async function execute(
@@ -60,8 +70,26 @@ async function execute(
     return;
   }
 
+  const attachment = interaction.options.getAttachment("image");
+    
+  let imagePath: string | undefined;
+  
+  if (attachment) {
+    const randomName = generateRandomString(8);
+    const fileExtension = path.extname(attachment.name);
+    imagePath = path.join("tmp", `${randomName}${fileExtension}`);
+    
+    if (!fs.existsSync("tmp")) fs.mkdirSync("tmp");
+    const response = await fetch(attachment.url);
+    const buffer = await response.arrayBuffer();
+    fs.writeFileSync(imagePath, Buffer.from(buffer));
+  }
+
+  const modalId = `post:${handle}:modal` 
+  const lastPart = imagePath ? `:${imagePath}` : ''
+  
   const modal = new ModalBuilder()
-    .setCustomId(`post:${handle}:modal`)
+    .setCustomId(`${modalId}${lastPart}`)
     .setTitle("Create Post");
 
   const tweetInput = new TextInputBuilder()
@@ -88,11 +116,15 @@ async function modalExecute(
   switch (rest[0]) {
     case "modal": {
       const content = interaction.fields.getTextInputValue("tweetContent");
+      const imagePath = rest[1];
+      
       await newPost(interaction, {
         handle,
         content,
+        imagePath
       });
-
+      
+      if (imagePath && fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
       break;
     }
     case "reply": {
