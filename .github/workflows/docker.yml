@@ -23,10 +23,14 @@ jobs:
     env:
       IMAGE_NAME: ${{ github.repository }}
       TEST_MODE: ${{ github.ref != 'refs/heads/main' }}
-      PUSH: ${{ !contains(github.event_name, 'pull_request') && env.TEST_MODE != 'true' }}
-      LOAD: ${{ !contains(github.event_name, 'pull_request') || env.TEST_MODE != 'true' }}
 
     steps:
+      - name: Set environment variables
+        id: env
+        run: |
+          echo "PUSH=${{ !contains(github.event_name, 'pull_request') && github.ref == 'refs/heads/main' }}" >> $GITHUB_ENV
+          echo "LOAD=${{ !contains(github.event_name, 'pull_request') || github.ref != 'refs/heads/main' }}" >> $GITHUB_ENV
+
       - name: Checkout code
         uses: actions/checkout@v4
 
