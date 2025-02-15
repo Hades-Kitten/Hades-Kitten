@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - docker
+      - "*"
   pull_request:
     branches:
       - main
@@ -16,7 +16,7 @@ jobs:
 
     env:
       IMAGE_NAME: ${{ github.repository }}
-      TEST_MODE: true
+      TEST_MODE: ${{ github.ref != 'refs/heads/main' }}
 
     steps:
       - name: Checkout code
