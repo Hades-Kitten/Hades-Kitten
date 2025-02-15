@@ -33,13 +33,13 @@ jobs:
 
       - name: Debug
         run: |
-          echo "gitgub ref: ${{ github.ref }}"
-          echo "gitgub event: ${{ github.event_name }}"
+          echo "github ref: ${{ github.ref }}"
+          echo "github event: ${{ github.event_name }}"
           echo "repository: ${{ github.repository }}"
           echo "test mode: ${{ env.TEST_MODE }}"
           echo ""
-          echo "push: ${{ github.event_name != 'pull_request' && !env.TEST_MODE }}"
-          echo "load: ${{ github.event_name == 'pull_request' || env.TEST_MODE }}"
+          echo "push: ${{ !contains(github.event_name, 'pull_request') && env.TEST_MODE != 'true' }}"
+          echo "load: ${{ !contains(github.event_name, 'pull_request') || env.TEST_MODE != 'true' }}"
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -58,8 +58,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' && !env.TEST_MODE }}
-          load: ${{ github.event_name == 'pull_request' || env.TEST_MODE }}
+          push: ${{ !contains(github.event_name, 'pull_request') && env.TEST_MODE != 'true' }}
+          load: ${{ !contains(github.event_name, 'pull_request') || env.TEST_MODE != 'true' }}
           tags: |
             ghcr.io/${{ steps.prep.outputs.repository }}:latest
             ghcr.io/${{ steps.prep.outputs.repository }}:${{ github.sha }}
