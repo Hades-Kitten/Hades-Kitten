@@ -167,7 +167,7 @@ async function execute(
       const profilePicture = interaction.options.getString("profile_picture");
       const bannerPicture = interaction.options.getString("banner_picture");
       const location = interaction.options.getString("location");
-      const verified = interaction.options.getString("location") || false;
+      const verified = interaction.options.getBoolean("verified") || false;
 
       const existingProfile = await Profile.findOne({
         where: {
