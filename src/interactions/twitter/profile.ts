@@ -3,6 +3,7 @@ import {
   type ChatInputCommandInteraction,
   type Client,
   EmbedBuilder,
+  InteractionContextType,
   SlashCommandBuilder,
   StringSelectMenuBuilder,
   type StringSelectMenuInteraction,
@@ -15,6 +16,7 @@ import autocomplete from "../../utils/handleAutocomplete";
 const commandData = new SlashCommandBuilder()
   .setName("profile")
   .setDescription("Manage your social profiles")
+  .setContexts(InteractionContextType.Guild)
   .addSubcommand((subcommand) =>
     subcommand
       .setName("create")

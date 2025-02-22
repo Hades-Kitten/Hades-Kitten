@@ -3,6 +3,7 @@ import {
   type ChatInputCommandInteraction,
   type Client,
   EmbedBuilder,
+  InteractionContextType,
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
@@ -18,6 +19,7 @@ const commandData = new SlashCommandBuilder()
       .setDescription("The nationstates region to watch")
       .setRequired(true),
   )
+  .setContexts(InteractionContextType.Guild)
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
 async function execute(

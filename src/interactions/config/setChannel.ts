@@ -3,6 +3,7 @@ import {
   type ChatInputCommandInteraction,
   type Client,
   EmbedBuilder,
+  InteractionContextType,
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
@@ -72,6 +73,7 @@ const commandData = new SlashCommandBuilder()
           .addChannelTypes(ChannelType.GuildText),
       ),
   )
+  .setContexts(InteractionContextType.Guild)
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
 async function execute(

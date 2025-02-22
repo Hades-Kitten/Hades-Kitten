@@ -9,6 +9,7 @@ import {
   ButtonStyle,
   type ChatInputCommandInteraction,
   type Client,
+  InteractionContextType,
   type Message,
   ModalBuilder,
   type ModalSubmitInteraction,
@@ -35,6 +36,7 @@ function generateRandomString(length: number): string {
 const commandData = new SlashCommandBuilder()
   .setName("post")
   .setDescription("Create a new post")
+  .setContexts(InteractionContextType.Guild)
   .addStringOption((option) =>
     option
       .setName("handle")

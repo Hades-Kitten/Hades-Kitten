@@ -1,18 +1,21 @@
 import {
+  type ChatInputCommandInteraction,
+  SlashCommandBuilder,
+  EmbedBuilder,
+  ButtonStyle,
   ActionRowBuilder,
   ButtonBuilder,
-  type ButtonInteraction,
-  ButtonStyle,
   ChannelType,
-  type ChatInputCommandInteraction,
   type Client,
-  EmbedBuilder,
-  SlashCommandBuilder,
+  type ButtonInteraction,
+  InteractionContextType,
 } from "discord.js";
+import xmlToJson from "../utils/xmlToJson";
 import env from "../env.ts";
 import formatter from "../utils/formatStringsAndNumbers.ts";
-import xmlToJson from "../utils/xmlToJson";
-import type { Nation, Region } from "../types";
+
+import type { Nation } from "../types";
+import Verify from "../models/verify";
 
 const nationAuthor = (nationData: Nation) => ({
   name: nationData.FULLNAME,
@@ -21,87 +24,6 @@ const nationAuthor = (nationData: Nation) => ({
     nationData.NAME
   )}`,
 });
-const regionAuthor = (regionData: Region) => ({
-  name: regionData.NAME,
-  iconURL: formatter.FormatNSFlag(regionData.FLAG),
-  url: `https://www.nationstates.net/region=${encodeURIComponent(
-    regionData.NAME
-  )}`,
-});
-
-async function generateNationsPage(regionData: Region): Promise<EmbedBuilder> {
-  return new EmbedBuilder()
-    .setAuthor(regionAuthor(regionData))
-    .setTitle("Nations")
-    .setDescription(
-      `${formatter.formatNationsArray(regionData.NATIONS) || "Unknown"}`
-    );
-}
-async function generateEmbassiesPage(
-  regionData: Region
-): Promise<EmbedBuilder> {
-  const embassiesArray: string[] = [];
-
-  if (regionData.EMBASSIES && Array.isArray(regionData.EMBASSIES.EMBASSY)) {
-    for (const embassy of regionData.EMBASSIES.EMBASSY) {
-      if (typeof embassy === "string") {
-        embassiesArray.push(embassy.trim());
-      }
-    }
-  }
-
-  const nonRejectedEmbassies = embassiesArray.join(", ");
-
-  let replacedNonRejectedEmbassies: string;
-  if (nonRejectedEmbassies.length > 4096) {
-    replacedNonRejectedEmbassies = nonRejectedEmbassies.substring(0, 4096);
-  } else {
-    replacedNonRejectedEmbassies = nonRejectedEmbassies;
-  }
-
-  return new EmbedBuilder()
-    .setAuthor(regionAuthor(regionData))
-    .setTitle("Embassies")
-    .setDescription(`${replacedNonRejectedEmbassies || "Unknown"}`);
-}
-
-async function generateRegionalGeneralInformationPage(
-  regionData: Region
-): Promise<EmbedBuilder> {
-  const wadelegate = regionData.DELEGATE
-    ? `[${formatter.formatNationName(
-        regionData.DELEGATE
-      )}](https://www.nationstates.com/nation=${regionData.DELEGATE})`
-    : `Power Vaccum`;
-
-  const officersEmbed = regionData.OFFICERS.OFFICER.map(
-    (officer) =>
-      `**${officer.OFFICE}**: [${formatter.formatNationName(
-        officer.NATION
-      )}](https://www.nationstates.net/nation=${
-        officer.NATION
-      }) and, has been in office since <t:${officer.TIME}:R>`
-  ).join("\n\n");
-
-  return new EmbedBuilder()
-    .setAuthor(regionAuthor(regionData))
-    .setImage(`https://www.nationstates.net${regionData.BANNERURL}`)
-    .setDescription(
-      `**Governor:** [${formatter.formatNationName(
-        regionData.GOVERNOR
-      )}](https://www.nationstates.net/nation=${
-        regionData.GOVERNOR
-      })\n\n **WA Delegate:** ${wadelegate}\n\n ${officersEmbed}`
-    )
-    .addFields(
-      { name: "Global Power", value: regionData.POWER, inline: true },
-      {
-        name: "Founded on",
-        value: `<t:${regionData.FOUNDEDTIME}>`,
-        inline: true,
-      }
-    );
-}
 
 function factbookListFun(nationData: Nation) {
   let factbookembed = "";
@@ -442,19 +364,14 @@ async function generateGeneralInformationPage(
 }
 
 const commandData = new SlashCommandBuilder()
-  .setName("info")
+  .setName("info-user")
   .setDescription("Get info about a nation")
-  .addStringOption((option) =>
+  .setContexts(InteractionContextType.Guild)
+  .addMentionableOption((option) =>
     option
-      .setName("nation")
-      .setDescription("The nation to get info about")
-      .setRequired(false)
-  )
-  .addStringOption((option) =>
-    option
-      .setName("region")
-      .setDescription("The region to get info about")
-      .setRequired(false)
+      .setName("user")
+      .setDescription("The user whose nation to get info about")
+      .setRequired(true)
   );
 async function fetchNationData(nationName: string) {
   const apiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?nation=${encodeURIComponent(
@@ -470,27 +387,6 @@ async function fetchNationData(nationName: string) {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.text();
     const jsonData = await xmlToJson<{ NATION: Nation }>(data);
-    return jsonData;
-  } catch (error) {
-    console.error("Error fetching or processing data:", error);
-    return null;
-  }
-}
-
-async function fetchRegionData(regionName: string) {
-  const apiUrl = `https://www.nationstates.net/cgi-bin/api.cgi?region=${encodeURIComponent(
-    regionName
-  )}&q=name+flag+bannerurl+power+numnations+nations+embassies+foundedtime+governor+officers+delegate+wanations`;
-  try {
-    const response = await fetch(apiUrl, {
-      method: "GET",
-      headers: {
-        "User-Agent": env.data.USER_AGENT,
-      },
-    });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const data = await response.text();
-    const jsonData = await xmlToJson<{ REGION: Region }>(data);
     return jsonData;
   } catch (error) {
     console.error("Error fetching or processing data:", error);
@@ -579,106 +475,28 @@ async function updatePage(
   }
 }
 
-async function updateRegionPage(
-  interaction: ChatInputCommandInteraction | ButtonInteraction,
-  regionName: string,
-  pageFunctions: ((regionData: Region) => Promise<EmbedBuilder>)[],
-  currentPage: number,
-  maxPage: number
-) {
-  const jsonData = await fetchRegionData(regionName);
-  if (!jsonData || !jsonData.REGION) {
-    if (interaction.isCommand()) {
-      await interaction.reply("Could not retrieve regional data.");
-      return;
-    }
-    if (interaction.isButton()) {
-      await interaction.reply({
-        content: "Could not retrieve nation data.",
-        flags: ["Ephemeral"],
-      });
-      return;
-    }
-    return;
-  }
-
-  const regionData = jsonData.REGION;
-  const buttonRow = new ActionRowBuilder<ButtonBuilder>();
-  const embed = await pageFunctions[currentPage](regionData);
-  embed.setFooter({
-    text: `Page ${currentPage + 1}/${maxPage}`,
-    iconURL: formatter.FormatNSFlag(regionData.FLAG),
-  });
-
-  buttonRow.addComponents([
-    new ButtonBuilder()
-      .setCustomId(`${commandData.name}:${regionName}:turn:${currentPage - 1}`)
-      .setLabel("Previous")
-      .setStyle(ButtonStyle.Primary)
-      .setDisabled(currentPage === 0),
-    new ButtonBuilder()
-      .setCustomId(`${commandData.name}:${regionName}:pageindicator`)
-      .setLabel(`Page ${currentPage + 1} of ${maxPage}`)
-      .setStyle(ButtonStyle.Secondary)
-      .setDisabled(true),
-    new ButtonBuilder()
-      .setCustomId(`${commandData.name}:${regionName}:turn:${currentPage + 1}`)
-      .setLabel("Next")
-      .setStyle(ButtonStyle.Primary)
-      .setDisabled(currentPage === maxPage - 1),
-    new ButtonBuilder()
-      .setLabel("Open on NationStates")
-      .setStyle(ButtonStyle.Link)
-      .setURL(
-        `https://www.nationstates.net/region=${encodeURIComponent(
-          regionData.NAME
-        )}`
-      ),
-  ]);
-
-  if (interaction.isButton()) {
-    if (interaction.user)
-      await interaction.message.edit({
-        embeds: [embed],
-        components: [buttonRow],
-      });
-
-    await interaction.deferUpdate();
-    return;
-  }
-  if (interaction.isCommand()) {
-    await interaction.reply({
-      embeds: [embed],
-      components: [buttonRow],
-    });
-    return;
-  }
-}
-
 async function execute(
   _client: Client,
   interaction: ChatInputCommandInteraction
 ) {
   if (interaction.channel?.type !== ChannelType.GuildText) return;
 
-  const nationName = interaction.options.getString("nation");
-  const regionName = interaction.options.getString("region");
-
-  let optionsProvided = 0;
-  if (nationName) optionsProvided++;
-  if (regionName) optionsProvided++;
-
-  if (optionsProvided > 1 || optionsProvided == 0) {
-    await interaction.deferReply({ flags: ["Ephemeral"] });
-    return await interaction.editReply(
-      "You can only provide one option at a time."
-    );
-  }
+  const mentionedUser = interaction.options.getUser("user");
 
   let nationToLookup: string | null = null;
 
-  if (nationName !== null && regionName == null) {
-    nationToLookup = nationName;
+  if (mentionedUser !== null) {
+    const userData = await Verify.findOne({
+      where: { userId: mentionedUser.id, guildId: interaction.guild?.id },
+    });
+
+    if (userData) {
+      nationToLookup = userData.get("nation") as string | null;
+    }
+    if (!nationToLookup)
+      return await interaction.reply(
+        "This user's data is not available in the database. It could be that the user hasn't verified."
+      );
   }
   if (nationToLookup) {
     const pageFunctions = [
@@ -691,20 +509,6 @@ async function execute(
     await updatePage(
       interaction,
       nationToLookup,
-      pageFunctions,
-      0,
-      pageFunctions.length
-    );
-  }
-  if (nationName == null && regionName !== null) {
-    const pageFunctions = [
-      generateRegionalGeneralInformationPage,
-      generateNationsPage,
-      generateEmbassiesPage,
-    ];
-    await updateRegionPage(
-      interaction,
-      regionName,
       pageFunctions,
       0,
       pageFunctions.length
@@ -733,26 +537,6 @@ async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
       factbooksPage,
     ];
     await updatePage(
-      interaction,
-      nationName,
-      pageFunctions,
-      page,
-      pageFunctions.length
-    );
-  } else if (action === "turn") {
-    const page = Number.parseInt(pageString);
-    if (Number.isNaN(page)) {
-      return await interaction.followUp({
-        content: "Something went wrong",
-        flags: ["Ephemeral"],
-      });
-    }
-    const pageFunctions = [
-      generateRegionalGeneralInformationPage,
-      generateNationsPage,
-      generateEmbassiesPage,
-    ];
-    await updateRegionPage(
       interaction,
       nationName,
       pageFunctions,
