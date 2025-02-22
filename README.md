@@ -56,7 +56,10 @@ You can also append `:staged` so that only your staged changes are checked.
 
 ## Roadmap
 
-- [ ] All types of Information Command (i.e., nation info, region info, nation info by mention)
+- [X] All types of Information Command (i.e., nation info, region info, nation info by mention)
+- [X] Comparison Command
+- [X] Twatter; An in-built social media platform
+- [ ] Trade Command
 - [x] Nation Verification System
 - [ ] Activity logger
 
