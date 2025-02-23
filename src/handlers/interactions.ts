@@ -55,7 +55,7 @@ async function registerInteractions(
 
 async function registerCommands(client: Client) {
   const commands = await getCommands();
-  logger.log(`Found ${commands.length} commands.`);
+  logger.info(`Found ${commands.length} commands.`);
 
   const interactions = commands.map((command) => command.data);
   await registerInteractions(client, interactions);
