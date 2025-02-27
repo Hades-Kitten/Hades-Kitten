@@ -7,7 +7,7 @@ const Tweet = sequelize.define("tweet", {
     allowNull: false,
   },
   content: {
-    type: Sequelize.STRING(280),
+    type: Sequelize.STRING(2148),
     allowNull: false,
   },
   timestamp: {

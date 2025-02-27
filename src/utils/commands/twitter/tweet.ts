@@ -54,14 +54,20 @@ function parseContent(content: string) {
   return { parsedContent, mentionedUsers };
 }
 
-async function constructEmbed(
+export async function constructEmbed(
   post: PostInstance,
   profile: Model,
   replyToId?: string,
   replyToMessageUrl?: string,
   imagePath?: string,
+  showFullContent = false,
 ) {
   const content = post.get("content") as string;
+  const displayContent = showFullContent
+    ? content
+    : content.length > 280
+      ? `${content.substring(0, 277)}...`
+      : content;
 
   let replyHandle: string | null = null;
   if (replyToId) {
@@ -83,7 +89,7 @@ async function constructEmbed(
     .setDescription(
       replyHandle && replyToMessageUrl
         ? `**[Replying to @${replyHandle}](${replyToMessageUrl})** ${content}`
-        : content,
+        : displayContent,
     )
     .setTimestamp(post.get("timestamp") as unknown as Date)
     .setColor("Blue");
@@ -99,8 +105,12 @@ async function constructEmbed(
   return embed;
 }
 
-function constructButtonRow(postId: string, handle: string) {
-  const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+function constructButtonRow(
+  postId: string,
+  handle: string,
+  contentLength: number,
+) {
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`post:${postId}:like`)
       .setLabel("0")
@@ -116,7 +126,16 @@ function constructButtonRow(postId: string, handle: string) {
       .setStyle(ButtonStyle.Secondary),
   );
 
-  return buttonRow;
+  if (contentLength > 280) {
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId(`post:${postId}:showMore`)
+        .setLabel("Show More")
+        .setStyle(ButtonStyle.Secondary),
+    );
+  }
+
+  return row;
 }
 
 async function newPost(interaction: ModalSubmitInteraction, post: PostInput) {
@@ -205,7 +224,11 @@ async function newPost(interaction: ModalSubmitInteraction, post: PostInput) {
     imagePath,
   );
 
-  const buttonRow = constructButtonRow(newPost.get("id") as string, handle);
+  const buttonRow = constructButtonRow(
+    newPost.get("id") as string,
+    handle,
+    content.length,
+  );
 
   type MessageBody = {
     embeds: EmbedBuilder[];

@@ -20,6 +20,9 @@ import {
   TextInputStyle,
 } from "discord.js";
 
+import type { PostInstance } from "../../types";
+import { constructEmbed } from "../../utils/commands/twitter/tweet";
+
 import Profile from "../../models/profile";
 import Region from "../../models/region";
 import Tweet from "../../models/tweet";
@@ -96,7 +99,7 @@ async function execute(
     .setCustomId("tweetContent")
     .setLabel("What's on your mind?")
     .setStyle(TextInputStyle.Paragraph)
-    .setMaxLength(280)
+    .setMaxLength(2148)
     .setRequired(true);
 
   const firstActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(
@@ -108,7 +111,7 @@ async function execute(
 }
 
 async function modalExecute(
-  client: Client,
+  _client: Client,
   interaction: ModalSubmitInteraction,
 ) {
   const [_command, handle, ...rest] = interaction.customId.split(":");
@@ -252,6 +255,44 @@ async function buttonExecute(_client: Client, interaction: ButtonInteraction) {
 
       break;
     }
+
+    case "showMore": {
+      const tweet = await Tweet.findOne({ where: { id: tweetId } });
+      if (!tweet) {
+        await interaction.reply({
+          content: "Tweet not found!",
+          flags: ["Ephemeral"],
+        });
+        return;
+      }
+
+      const profile = await Profile.findOne({
+        where: { id: tweet.get("profileId") },
+      });
+      if (!profile) {
+        await interaction.reply({
+          content: "Profile not found!",
+          flags: ["Ephemeral"],
+        });
+        return;
+      }
+
+      const content = tweet.get("content") as string;
+      const fullEmbed = await constructEmbed(
+        tweet as PostInstance,
+        profile,
+        tweet.get("replyToTweetId") as string | undefined,
+        undefined,
+        undefined,
+        true,
+      );
+
+      await interaction.reply({
+        embeds: [fullEmbed],
+        flags: ["Ephemeral"],
+      });
+      break;
+    }
   }
 }
 
@@ -385,6 +426,8 @@ async function selectMenuExecute(
     });
     return;
   }
+
+  const content = tweetUpdated.get("content") as string;
   const newButtonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`post:${tweetUpdated.get("id")}:like`)
@@ -402,6 +445,16 @@ async function selectMenuExecute(
       .setLabel("View Profile")
       .setStyle(ButtonStyle.Secondary),
   );
+
+  if (content.length > 280) {
+    newButtonRow.addComponents(
+      new ButtonBuilder()
+        .setCustomId(`post:${tweetUpdated.get("id")}:showMore`)
+        .setLabel("Show More")
+        .setStyle(ButtonStyle.Secondary),
+    );
+  }
+
   const interactionChannel = _client.channels.cache.get(
     interaction.channelId,
   ) as BaseGuildTextChannel;
